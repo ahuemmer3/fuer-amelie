@@ -16,7 +16,7 @@ export default function render(body, api) {
   const msg = h('p', { class: 'g-msg' });
   const rewardBox = h('div', { class: 'g-reward', hidden: true, text: reward });
   body.append(h('div', { class: 'g' }, [
-    h('p', { class: 'g-lead', html: `Fang Herzen <b>(+3)</b> und Sterne <b>(+1)</b> mit deinem Korb. Goldene Herzen geben <b>+10</b>. Weich den schwarzen Löchern aus. Ab <b>${goal} Punkten</b> gibt es eine Belohnung.` }),
+    h('p', { class: 'g-lead', html: `Fang Herzen <b>(+3)</b> und Sterne <b>(+1)</b> mit deinem Korb. Goldene Herzen geben <b>+10</b>. Pass auf die schwarzen Löcher auf: Sie ziehen deinen Korb an. Ab <b>${goal} Punkten</b> gibt es eine Belohnung.` }),
     st.el, stage, msg, rewardBox
   ]));
   if (api.isDone()) { rewardBox.hidden = false; }
@@ -37,12 +37,14 @@ export default function render(body, api) {
 
   function start() {
     reset(); v.hide(); msg.textContent = '';
+    api.epic(true);
     running && running.stop();
     running = loop(dt => { update(dt); draw(); });
   }
 
   function end() {
     running && running.stop(); running = null;
+    api.epic(false);
     const newBest = game.score > best;
     if (newBest) { best = game.score; store.set('catchBest', best); st.set('best', best); }
     const reached = game.score >= goal;
@@ -51,10 +53,11 @@ export default function render(body, api) {
   }
 
   function spawn() {
-    const d = Math.min(1, game.t / 60);
-    const r = Math.random();
-    const type = r < .16 + d * .12 ? 'hole' : r < .5 ? 'heart' : r < .53 ? 'gold' : 'star';
-    game.items.push({ type, x: 24 + Math.random() * (W - 48), y: -24, vy: (120 + d * 190) * (H / 480) * (.8 + Math.random() * .4), rot: Math.random() * 6, spin: (Math.random() - .5) * 3, sway: Math.random() * 6 });
+    const d = Math.min(1, game.t / 45);
+    const r = Math.random(), pHole = .22 + d * .16;
+    const type = r < pHole ? 'hole' : r < pHole + .3 ? 'heart' : r < pHole + .32 ? 'gold' : 'star';
+    const fast = type === 'gold' ? 1.35 : 1;
+    game.items.push({ type, x: 24 + Math.random() * (W - 48), y: -24, vy: (150 + d * 260) * (H / 480) * (.8 + Math.random() * .45) * fast, rot: Math.random() * 6, spin: (Math.random() - .5) * 3, sway: Math.random() * 6, amp: type === 'hole' ? 60 + d * 60 : 20 });
   }
 
   function burst(x, y, color, n = 12) {
@@ -63,13 +66,19 @@ export default function render(body, api) {
 
   function update(dt) {
     const g = game; g.t += dt; g.spawn -= dt; g.inv = Math.max(0, g.inv - dt); g.shake = Math.max(0, g.shake - dt * 3);
-    if (g.spawn <= 0) { spawn(); g.spawn = Math.max(.24, .62 - g.t * .006) + Math.random() * .12; }
+    if (g.spawn <= 0) { spawn(); g.spawn = Math.max(.2, .55 - g.t * .008) + Math.random() * .1; }
+    // black holes pull the basket towards them
+    for (const it of g.items) {
+      if (it.type !== 'hole') continue;
+      const dx = it.x - g.tx, dy = (H - 42) - it.y;
+      if (dy > 0 && dy < 260 && Math.abs(dx) < 170) g.tx = clamp(g.tx + Math.sign(dx) * 190 * (1 - dy / 260) * dt, 40, W - 40);
+    }
     g.x += (g.tx - g.x) * Math.min(1, dt * 18);
     const by = H - 42;
     for (let i = g.items.length - 1; i >= 0; i--) {
       const it = g.items[i];
-      it.y += it.vy * dt; it.rot += it.spin * dt; it.x += Math.sin(g.t * 2 + it.sway) * 20 * dt;
-      if (it.y > by - 16 && it.y < by + 14 && Math.abs(it.x - g.x) < 46) {
+      it.y += it.vy * dt; it.rot += it.spin * dt; it.x = clamp(it.x + Math.sin(g.t * 2.4 + it.sway) * it.amp * dt, 16, W - 16);
+      if (it.y > by - 16 && it.y < by + 14 && Math.abs(it.x - g.x) < 40) {
         g.items.splice(i, 1);
         if (it.type === 'hole') {
           if (g.inv > 0) continue;
@@ -163,5 +172,5 @@ export default function render(body, api) {
   size(); reset();
   v.show({ t: 'Bereit?', p: 'Mit dem Finger oder der Maus steuern, am Computer auch mit ← →.', button: 'Spiel starten', onClick: start });
 
-  return () => { running && running.stop(); removeEventListener('keydown', keys); removeEventListener('resize', onResize); };
+  return () => { running && running.stop(); api.epic(false); removeEventListener('keydown', keys); removeEventListener('resize', onResize); };
 }

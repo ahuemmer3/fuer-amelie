@@ -20,7 +20,9 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 | **Euer Startdatum für den Zähler** | `zusammenSeit: '2025-06-14'` |
 | Initialen fürs Sternbild-Spiel | `initialen: ['A', 'L']` |
 | Startkarte (Titel, Untertitel, Datum, Button) | `karte` |
-| Großer Schriftzug | `titel` |
+| Großer Schriftzug (wechselt) | `titel` |
+| Texte der Intro-Reise, Porträts | `intro` |
+| Geburtstagstorte (Kerzen, Wunsch) | `geburtstag` |
 | Farben | `farben` |
 | Musik | `musik.datei` |
 | Liebesbotschaften auf den Ringen | `botschaften` |
@@ -153,6 +155,14 @@ Vorschau deshalb am besten erst, wenn alles fertig ist (z. B. indem du dir selbs
   automatisch, um flüssig zu bleiben.
 - **Neigen am iPhone:** Beim Tippen auf „Öffnen“ fragt Safari, ob die Seite die
   Bewegungssensoren nutzen darf. Mit „Erlauben“ bewegt sich die Galaxie leicht mit.
+
+### Geheime Abkürzungen (nur ihr zwei wisst davon)
+
+- **Alles lösen:** 3 Sekunden auf den Planeten-Zähler unten rechts (z. B. „4/11“) drücken.
+  Alle Spiele gelten als geschafft und das letzte Geheimnis (der Brief) öffnet sich.
+- **Ein Spiel lösen:** In einem offenen Spiel 2 Sekunden auf die Überschrift drücken.
+  Nur dieses Spiel gilt dann als geschafft.
+- **Intro überspringen:** Während des Flugs erscheint unten rechts „Überspringen“.
 
 ### Easter Eggs (Spoiler, nur für dich)
 

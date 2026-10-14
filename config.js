@@ -17,18 +17,37 @@ export const CONFIG = {
   initialen: ['A', 'A'],             // Für das Sternbild-Spiel (Aaron + Amelie). Zweites Feld leer = Unendlich-Zeichen
 
   /* ---------- Datum ---------- */
-  zusammenSeit: '',                  // WICHTIG: euer Startdatum als 'JJJJ-MM-TT', z. B. '2025-06-14'
+  zusammenSeit: '2025-12-24',        // euer Startdatum als 'JJJJ-MM-TT'
 
   /* ---------- Startkarte ---------- */
   karte: {
     titel: 'Für Amelie',
-    untertitel: 'Eine kleine Galaxie, nur für uns zwei.',
-    datum: '',                       // leer = heutiges Datum, sonst z. B. '14. Oktober 2026'
+    untertitel: 'Alles Liebe zum Geburtstag. Eine kleine Galaxie, nur für dich.',
+    datum: 'Zu deinem Geburtstag',   // kleine Zeile über dem Titel (leer = heutiges Datum)
     button: 'Öffnen'
   },
 
-  /* ---------- Großer Schriftzug in der Galaxie ---------- */
-  titel: 'Ich liebe dich',
+  /* ---------- Großer Schriftzug in der Galaxie (wechselt alle paar Sekunden) ---------- */
+  titel: ['Happy Birthday, Amelie', 'Ich liebe dich'],
+
+  /* ---------- Intro-Reise: Texte, die beim Flug durchs Universum erscheinen ----------
+     Die zwei Porträts liegen in assets/photos/thumbs/ (portrait-aaron.webp, portrait-amelie.webp) */
+  intro: {
+    zeilen: [
+      'Irgendwo zwischen Milliarden von Sternen …',
+      '… haben sich zwei gefunden.',
+      'Amelie & Aaron',
+      'Seit dem 24. Dezember 2025',
+      'Und heute ist dein Tag.'
+    ],
+    portraits: ['portrait-aaron.webp', 'portrait-amelie.webp']
+  },
+
+  /* ---------- Geburtstagstorte (Planet „Torte“) ---------- */
+  geburtstag: {
+    kerzen: 5,                       // Anzahl Kerzen (oder ihr Alter eintragen)
+    wunsch: 'Alles Gute zum Geburtstag, mein Schatz! Ich hoffe, all deine Wünsche gehen in Erfüllung. Einer davon bin hoffentlich ich.'
+  },
 
   /* ---------- Farben (Hex-Codes) ---------- */
   farben: {
@@ -51,9 +70,9 @@ export const CONFIG = {
 
   /* ---------- Textringe, die mit der Galaxie kreisen (innen → außen) ---------- */
   botschaften: [
-    ['Du bist mein Zuhause', 'Mein Lieblingsmensch', 'Für immer wir'],
+    ['Happy Birthday, Amelie', 'Du bist mein Zuhause', 'Mein Lieblingsmensch', 'Für immer wir'],
     ['Mit dir ist alles schöner', 'Danke, dass es dich gibt', 'Du + Ich', 'Mein Herz gehört dir'],
-    ['Jeder Tag mit dir ist ein Geschenk', 'Du bist mein Universum', 'Ich würde dich immer wieder wählen', 'Bis zum Ende der Galaxie']
+    ['Alles Gute zum Geburtstag', 'Jeder Tag mit dir ist ein Geschenk', 'Du bist mein Universum', 'Ich würde dich immer wieder wählen', 'Bis zum Ende der Galaxie']
   ],
 
   /* ---------- Fotos ----------
@@ -61,7 +80,6 @@ export const CONFIG = {
      Die ersten Fotos kreisen in der Galaxie (am Handy etwas weniger). */
   fotos: [
     { datei: 'foto-53.webp', titel: 'Wir zwei', text: 'Goldenes Licht, dein Kleid und ich mittendrin. Eins meiner liebsten Fotos von uns.' },
-    { datei: 'foto-08.webp', titel: 'Sperrbildschirm-Material', text: 'Mein Sperrbildschirm. Ich schau ihn öfter an, als ich zugeben würde.' },
     { datei: 'foto-24.webp', titel: 'Erwischt', text: 'Ein Kuss auf die Wange, bevor du abdrücken konntest.' },
     { datei: 'foto-31.webp', titel: 'Meerblick', text: 'Das Meer war schön. Du warst schöner.' },
     { datei: 'foto-34.webp', titel: 'Ganz seriös', text: 'Unser Versuch, mal ernst zu gucken. Hat ungefähr drei Sekunden gehalten.' },
@@ -69,7 +87,6 @@ export const CONFIG = {
     { datei: 'foto-51.webp', titel: 'Lautstärke 100 %', text: 'Palmen, Sonne und ein Schrei, den man bis nach Hause gehört hat.' },
     { datei: 'foto-40.webp', titel: 'Blaue Stunde', text: 'Kurz bevor die Sonne ganz weg war. Und ich wollte, dass der Abend nie aufhört.' },
     { datei: 'foto-47.webp', titel: 'Erwachsen sein? Morgen.', text: 'Kein Spielplatz ist vor dir sicher. Und ich liebe das.' },
-    { datei: 'foto-04.webp', titel: 'Schwarz-Weiß', text: 'Auch ohne Farbe das Schönste auf meinem Bildschirm.' },
     { datei: 'foto-35.webp', titel: 'Überraschung!', text: 'Keine Ahnung mehr, was da passiert ist. Unsere Gesichter erzählen es trotzdem.' },
     { datei: 'foto-39.webp', titel: 'Sommerabend', text: 'Du, das Meer und dieser Abend. Mehr braucht es nicht.' },
     { datei: 'foto-15.webp', titel: 'Easy Rider', text: 'Helm auf, Sonnenbrille an, Abenteuer los.' },
@@ -90,7 +107,7 @@ export const CONFIG = {
   puzzleFoto: 'foto-53.webp',
 
   herzenFangen: {
-    ziel: 40,                                               // ab dieser Punktzahl gibt es die Belohnung
+    ziel: 60,                                               // ab dieser Punktzahl gibt es die Belohnung
     belohnung: 'Gutschein: Ein Abend, an dem du den Film aussuchst. Ohne Diskussion.'
   },
 
@@ -136,12 +153,11 @@ export const CONFIG = {
 
   /* ---------- Zeitstrahl ---------- */
   zeitstrahl: [
-    { datum: 'Der Anfang', titel: 'Wie alles begann', text: 'Hier kannst du erzählen, wie ihr euch kennengelernt habt.', foto: 'foto-53.webp' },
-    { datum: '4. Juli', titel: 'Neuer Sperrbildschirm', text: 'Ab da gab es auf meinem Handy nur noch ein Motiv.', foto: 'foto-04.webp' },
+    { datum: '24. Dezember 2025', titel: 'Der Anfang', text: 'An Heiligabend hat alles angefangen. Das schönste Geschenk, das ich je bekommen habe, war kein Paket.', foto: 'foto-53.webp' },
     { datum: 'Sommer', titel: 'Unser Urlaub am Meer', text: 'Sonne, Meer, viel zu viele Fotos und ein Schrei unter Palmen.', foto: 'foto-31.webp' },
+    { datum: 'Sommer', titel: 'Easy Rider', text: 'Mit Helm, Sonnenbrille und dir hintendrauf sieht jede Straße nach Abenteuer aus.', foto: 'foto-15.webp' },
     { datum: 'Sommer', titel: 'Blaue Stunde', text: 'Einer dieser Abende, die man nie vergisst.', foto: 'foto-40.webp' },
-    { datum: '12. September', titel: 'Sperrbildschirm 2.0', text: 'Ein noch schöneres Foto. Ich hatte keine Wahl.', foto: 'foto-08.webp' },
-    { datum: 'Heute', titel: 'Und alles, was noch kommt', text: 'Das hier ist erst der Anfang.', foto: 'foto-37.webp' }
+    { datum: 'Heute', titel: 'Dein Geburtstag', text: 'Alles Gute, mein Schatz. Das hier ist erst der Anfang von allem, was noch kommt.', foto: 'foto-37.webp' }
   ],
 
   /* ---------- Gründe, warum ich dich liebe (Planet "Gründe") ---------- */
@@ -166,11 +182,11 @@ export const CONFIG = {
 
   /* ---------- Finaler Liebesbrief (wird frei, wenn alle Spiele geschafft sind) ---------- */
   liebesbrief: {
-    anrede: 'Mein Schatz,',
+    anrede: 'Alles Gute zum Geburtstag, mein Schatz,',
     absaetze: [
       'du hast jedes Spiel in dieser kleinen Galaxie geschafft. Natürlich hast du das.',
-      'Ich wollte dir etwas schenken, das so ist wie das, was du mir jeden Tag gibst: ein bisschen Magie, ganz viel Licht und das Gefühl, genau am richtigen Ort zu sein.',
-      'Danke für jedes Lachen, jede Umarmung, jedes alberne Foto und jeden ruhigen Moment. Mit dir ist das Leben schöner, lauter, wärmer und viel lustiger.',
+      'Seit dem 24. Dezember ist mein Leben heller, lauter, wärmer und viel lustiger. Du bist das schönste Geschenk, das ich je bekommen habe, und heute ist der Tag, an dem ich dir etwas zurückgeben will.',
+      'Danke für jedes Lachen, jede Umarmung, jedes alberne Foto und jeden ruhigen Moment. Ich wünsche dir ein neues Lebensjahr voller Abenteuer, Sonne, Meer und ganz viel uns.',
       'Ich liebe dich. Heute, morgen und bis zum Ende dieser Galaxie.'
     ],
     gruss: 'Für immer dein',

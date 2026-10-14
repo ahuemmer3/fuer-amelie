@@ -19,6 +19,7 @@ import { Fireworks } from './scene/fireworks.js';
 import { WishStars } from './scene/wishstars.js';
 import { CardDissolve } from './intro/card.js';
 import { Warp } from './intro/warp.js';
+import { Journey } from './intro/journey.js';
 import { Overlay } from './ui/overlay.js';
 import { PhotoCard } from './ui/photo-card.js';
 import { toast, confetti } from './ui/feedback.js';
@@ -26,6 +27,7 @@ import { toast, confetti } from './ui/feedback.js';
 /* ------------------------------------------------------------------ planets */
 const PLANETS = [
   { id: 'fangen', title: 'Herzen fangen', icon: '💗', color: '#ff4fa3', kind: 'spiel', module: './games/catch.js' },
+  { id: 'torte', title: 'Geburtstagstorte', icon: '🎂', color: '#ffb3d4', kind: 'ueberraschung', module: './pages/cake.js', ring: true },
   { id: 'memory', title: 'Foto-Memory', icon: '🃏', color: '#ff8fc7', kind: 'spiel', module: './games/memory.js', ring: true },
   { id: 'quiz', title: 'Unser Quiz', icon: '💭', color: '#c77dff', kind: 'spiel', module: './games/quiz.js' },
   { id: 'sternbild', title: 'Sternbild', icon: '✨', color: '#8fb8ff', kind: 'spiel', module: './games/constellation.js' },
@@ -79,7 +81,7 @@ controls.autoRotate = true;
 controls.autoRotateSpeed = .35;
 controls.enabled = false;
 
-const START_POS = new THREE.Vector3(0, 46, 150);
+const START_POS = new THREE.Vector3(0, 22, 150);
 const START_TARGET = new THREE.Vector3(0, 0, 0);
 const homeView = () => (camera.aspect < .75
   ? { pos: new THREE.Vector3(0, 11.5, 28.5), target: new THREE.Vector3(0, 4.6, 0) }
@@ -92,7 +94,17 @@ $('cardTitle').textContent = CONFIG.karte.titel;
 $('cardSub').textContent = CONFIG.karte.untertitel;
 $('openBtn').querySelector('span').textContent = CONFIG.karte.button;
 $('cardDate').textContent = CONFIG.karte.datum || new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
-$('titleText').textContent = CONFIG.titel;
+const TITLES = [].concat(CONFIG.titel);
+$('titleText').textContent = TITLES[0];
+if (TITLES.length > 1) {
+  let ti = 0;
+  setInterval(() => {
+    if (phase !== 'main' || document.hidden) return;
+    const el = $('titleText');
+    el.classList.add('swap');
+    setTimeout(() => { ti = (ti + 1) % TITLES.length; el.textContent = TITLES[ti]; el.classList.remove('swap'); }, 900);
+  }, 8000);
+}
 document.documentElement.style.setProperty('--pink', CONFIG.farben.akzent);
 
 /* ------------------------------------------------------------------ loading */
@@ -110,7 +122,8 @@ async function preload() {
   const tick = () => setProgress(++done / total);
   const fontJobs = fonts.map(f => Promise.race([document.fonts.load(f), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(tick));
   const imgJobs = photoItems.map(p => loadImage(thumbUrl(p.datei)).catch(err => { console.warn(err.message); return null; }).then(img => { tick(); return img; }));
-  const [, images] = await Promise.all([Promise.all(fontJobs), Promise.all(imgJobs)]);
+  const portraitJobs = ((CONFIG.intro && CONFIG.intro.portraits) || []).map(f => loadImage(thumbUrl(f)).catch(() => null));
+  const [, images, portraitImgs] = await Promise.all([Promise.all(fontJobs), Promise.all(imgJobs), Promise.all(portraitJobs)]);
   const textures = images.map(img => {
     if (!img) return null;
     const tex = new THREE.Texture(img);
@@ -119,7 +132,8 @@ async function preload() {
     tex.needsUpdate = true;
     return tex;
   });
-  return { photoItems, textures };
+  const portraits = portraitImgs.filter(Boolean).map(img => { const tx = new THREE.Texture(img); tx.colorSpace = THREE.SRGBColorSpace; tx.needsUpdate = true; return tx; });
+  return { photoItems, textures, portraits };
 }
 
 function build({ photoItems, textures }) {
@@ -194,7 +208,7 @@ function setPixelRatio(v) {
 let frozen = false, freezeTimer = 0, savedView = null, flying = false;
 const overlay = new Overlay({
   onOpen: () => { freezeSoon(overlay.live ? -1 : .35); },
-  onClose: id => { unfreeze(); flyHome(); if (id && pendingWishes.length) setTimeout(flyWishes, 600); }
+  onClose: id => { Sound.setEpic(false); unfreeze(); flyHome(); if (id && pendingWishes.length) setTimeout(flyWishes, 600); }
 });
 const photoCard = new PhotoCard({ photos: CONFIG.fotos, onOpen: () => freezeSoon(.35), onClose: () => unfreeze() });
 
@@ -214,6 +228,8 @@ function makeApi(def) {
     wishes: () => Progress.wishes(),
     fireworks: (count = 3) => celebrate(count),
     heartRain: () => objects.floaters.rain(70),
+    epic: on => Sound.setEpic(on),
+    birthdaySong: () => Sound.happyBirthday(),
     eggCount: () => Progress.eggs().length,
     eggsTotal: EGGS_TOTAL
   };
@@ -449,7 +465,37 @@ function enableTilt() {
 const musicBtn = $('musicBtn'), sfxBtn = $('sfxBtn');
 musicBtn.addEventListener('click', () => musicBtn.setAttribute('aria-pressed', String(Sound.toggleMusic())));
 sfxBtn.addEventListener('click', () => sfxBtn.setAttribute('aria-pressed', String(Sound.toggleSfx())));
-$('mapBtn').addEventListener('click', () => {
+// Secret: hold the planet counter for 3 seconds → all games solved (in case it takes too long)
+let holdTimer = 0, holdFired = false;
+const mapBtn = $('mapBtn');
+mapBtn.addEventListener('pointerdown', () => { holdFired = false; clearTimeout(holdTimer); holdTimer = setTimeout(() => { holdFired = true; solveAll(); }, 3000); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => mapBtn.addEventListener(ev, () => clearTimeout(holdTimer)));
+mapBtn.addEventListener('contextmenu', e => e.preventDefault());
+// Secret: hold the title of an open game for 2 seconds → this game counts as solved
+let titleHold = 0;
+const ovTitle = $('ovTitle');
+ovTitle.addEventListener('pointerdown', () => { clearTimeout(titleHold); titleHold = setTimeout(() => solveCurrent(), 2000); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => ovTitle.addEventListener(ev, () => clearTimeout(titleHold)));
+ovTitle.addEventListener('contextmenu', e => e.preventDefault());
+
+function solveAll() {
+  if (phase !== 'main') return;
+  const before = Progress.doneCount(REQUIRED);
+  REQUIRED.forEach(id => Progress.complete(id));
+  refreshPlanetStates();
+  Sound.play('magic'); celebrate(4);
+  toast(before === REQUIRED.length ? 'Schon alles gelöst. Das letzte Geheimnis über dem Herz ist offen.' : 'Alle Spiele gelöst ✨ Das letzte Geheimnis über dem Herz ist jetzt offen.', 6000);
+}
+function solveCurrent() {
+  const id = overlay.id;
+  if (!id || !REQUIRED.includes(id)) return;
+  if (Progress.isDone(id)) { toast('Dieses Spiel ist schon geschafft.'); return; }
+  markComplete(id);
+  Sound.play('magic');
+}
+
+mapBtn.addEventListener('click', () => {
+  if (holdFired) { holdFired = false; return; }
   if (overlay.isOpen || phase !== 'main') return;
   Sound.play('tap');
   overlay.open({ id: null, title: 'Eure Galaxie', kicker: 'Übersicht', render: renderMap, api: {} });
@@ -483,11 +529,14 @@ let hintShown = false;
 function hideHint() { if (!hintShown) return; hintShown = false; $('hint').classList.remove('show'); }
 
 /* ------------------------------------------------------------------ intro */
-let dissolve, warp;
+let dissolve, warp, journey, portraitTextures = [], warpStarted = false;
 const tmpV = new THREE.Vector3();
+const J_START = 2.6, J_DUR = 9.4, J_ARRIVE = 8.23;   // journey timing (s); arrival = when both portraits reach the heart
+const HEART_POS = new THREE.Vector3(0, 5.1, 0);
+
 function startIntro() {
   phase = 'intro'; introT = 0;
-  Sound.start({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke });
+  Sound.start({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke, holdAmbient: J_START + J_ARRIVE + .5 });
   enableTilt();
   Sound.play('open');
   dissolve = new CardDissolve({ camera, pixelRatio: R.pixelRatio, maxCount: Q.tier === 'low' ? 7000 : 13000 });
@@ -495,26 +544,59 @@ function startIntro() {
   $('intro').classList.add('leaving');
   setTimeout(() => { $('intro').hidden = true; }, 460);
   warp = new Warp({ camera, count: Q.warp });
+  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: (CONFIG.intro && CONFIG.intro.zeilen) || [] });
+  setTimeout(() => { if (phase === 'intro') $('skipBtn').hidden = false; }, 1500);
 }
 
 function updateIntro(dt) {
   introT += dt;
   dissolve && dissolve.update(dt);
-  if (warp && !warp.active && introT > .35 && introT < 1) { warp.start(); Sound.play('whoosh'); }
-  warp && warp.update(dt);
-  const home = homeView();
-  const k = ease.inOutCubic(clamp((introT - .9) / 4.6, 0, 1));
-  camera.position.lerpVectors(START_POS, home.pos, k);
-  tmpV.lerpVectors(START_TARGET, home.target, k);
-  camera.lookAt(tmpV);
-  fade = ease.inOutSine(clamp((introT - 1.6) / 3.4, 0, 1));
-  if (introT > 4.6) $('title').classList.add('show');
-  if (introT > 5.3) { $('hud').classList.add('show'); $('mapBtn').classList.add('show'); }
-  if (introT > 5.6) enterMain(home);
+  if (!warpStarted && introT > .35) { warpStarted = true; warp.start(); Sound.play('whoosh'); Sound.cinematic(J_START + J_ARRIVE - .35); }
+  if (warp && warp.active) warp.update(dt);
+  if (introT < J_START) {
+    // hold at the start of the journey and turn smoothly towards the beam
+    const look = journey.beamSamples[Math.round(.085 * (journey.beamSamples.length - 1))];
+    camera.position.copy(journey.startPos);
+    tmpV.lerpVectors(START_TARGET, look, ease.inOutCubic(clamp(introT / J_START, 0, 1)));
+    camera.lookAt(tmpV);
+  } else {
+    if (journey.t < 0) journey.start(J_DUR);
+    if (journey.update(dt) === 'arrive') onArrive();
+  }
+  fade = ease.inOutSine(clamp((introT - 3.6) / 6.5, 0, 1));
+  const end = J_START + J_DUR;
+  if (introT > end + .2) $('title').classList.add('show');
+  if (introT > end + .7) { $('hud').classList.add('show'); $('mapBtn').classList.add('show'); }
+  if (introT > end + 1) enterMain();
 }
+
+/** the two portraits reach the heart: it bursts and re-forms */
+function onArrive() {
+  objects.heart.explode();
+  const hp = objects.heart.group.getWorldPosition(new THREE.Vector3());
+  objects.fireworks.burst(hp, { count: Q.tier === 'low' ? 600 : 1100, color: '#ff4fa3', speed: 6, heart: true });
+  objects.fireworks.burst(hp, { count: 400, color: '#ffcf73', speed: 3.5 });
+  const f = $('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
+  setTimeout(() => celebrate(3), 400);
+}
+
+function skipIntro() {
+  if (phase !== 'intro') return;
+  dissolve && dissolve.dispose();
+  if (warp && warp.active) warp.stop();
+  journey && journey.finish();
+  Sound.skipCinematic();
+  $('intro').hidden = true;
+  fade = 1;
+  enterMain();
+}
+$('skipBtn').addEventListener('click', skipIntro);
 
 function enterMain(home = homeView()) {
   phase = 'main';
+  $('skipBtn').hidden = true;
+  if (journey && !journey.done) journey.finish();
+  objects.planets.labelsOn = true;
   fade = 1;
   controls.target.copy(home.target);
   camera.position.copy(home.pos);
@@ -595,6 +677,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { cl
   try {
     const assets = await preload();
     objects = build(assets);
+    portraitTextures = assets.portraits;
     refreshPlanetStates();
     Progress.onChange(refreshPlanetStates);
     window.__galaxy = { quality: Q, fps: () => guard.fps, phase: () => phase, open: id => openPlanet(PLANETS.find(p => p.id === id), { fly: false }) };

@@ -8,6 +8,7 @@ export class Planets {
     this.labelRoot = labelRoot;
     this.hovered = null;
     this.visible = 0;
+    this.labelsOn = false;
 
     const sphere = new THREE.SphereGeometry(.62, 40, 28);
     const hitGeo = new THREE.SphereGeometry(1.5, 10, 8);
@@ -142,7 +143,7 @@ export class Planets {
     const order = [...this.list].sort((a, b) => (b.def.id === this.hovered) - (a.def.id === this.hovered) || a.depth - b.depth);
     const placed = [];
     for (const p of order) {
-      let show = p.screen.on;
+      let show = p.screen.on && this.labelsOn;
       if (show) {
         if (!p.labelW) p.labelW = p.label.offsetWidth;
         const lw = p.labelW || 110, lh = 26;

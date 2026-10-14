@@ -79,14 +79,17 @@ const scenarios = {
         await page.click('#openBtn');
         await page.waitForTimeout(500); await shot('2-dissolve');
         await page.waitForTimeout(1300); await shot('3-warp');
-        await page.waitForTimeout(1600); await shot('4-fly');
+        await page.waitForTimeout(2400); await shot('4-journey-a');
+        await page.waitForTimeout(2300); await shot('5-journey-b');
+        await page.waitForTimeout(2300); await shot('6-journey-c');
+        await page.waitForTimeout(1900); await shot('7-arrive');
         await waitPhase(page, 'main');
-        await page.waitForTimeout(1500); await shot('5-main');
+        await page.waitForTimeout(1500); await shot('8-main');
       });
     }
   },
   async games() {
-    const ids = (process.argv[3] || 'fangen,memory,quiz,sternbild,rubbellos,gluecksrad,puzzle,wunschstern,herzsuche,geheimfach,umlaufbahn,zeit,momente,gruende,finale').split(',');
+    const ids = (process.argv[3] || 'fangen,torte,memory,quiz,sternbild,rubbellos,gluecksrad,puzzle,wunschstern,herzsuche,geheimfach,umlaufbahn,zeit,momente,gruende,finale').split(',');
     for (const device of ['desktop', 'iphone']) {
       await session('games-' + device, { device, query: '?skip&q=low' }, async (page, shot) => {
         await waitPhase(page, 'main');
@@ -194,6 +197,34 @@ const scenarios = {
         console.log(`  5× Herz → Easter Eggs: ${eggs.join(', ') || 'keins'}`);
       });
     }
+  },
+  async birthday() {
+    await session('birthday', { device: 'iphone', query: '?skip&reset&q=low' }, async (page, shot) => {
+      await waitPhase(page, 'main');
+      // cake: tap across the area where the flames are
+      await page.evaluate(() => window.__galaxy.open('torte'));
+      await page.waitForTimeout(1000);
+      const box = await page.$('.g-stage canvas').then(e => e.boundingBox());
+      for (let y = box.y + box.height * .15; y < box.y + box.height * .6; y += 18)
+        for (let x = box.x + box.width * .2; x < box.x + box.width * .8; x += 18) await page.touchscreen.tap(x, y);
+      await page.waitForTimeout(1200);
+      const won = await page.$eval('.g-msg', el => el.classList.contains('win'));
+      console.log(`  Torte: alle Kerzen aus → ${won ? 'Geburtstagswunsch angezeigt' : 'NICHT geschafft'}`);
+      await shot('cake'); await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+      // catch game runs
+      await page.evaluate(() => window.__galaxy.open('fangen'));
+      await page.waitForTimeout(900);
+      await page.click('.g-veil .g-btn'); await page.waitForTimeout(4000);
+      await shot('catch'); await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+      // secret: hold the planet counter for 3 s
+      const m = await page.$('#mapBtn').then(e => e.boundingBox());
+      await page.mouse.move(m.x + m.width / 2, m.y + m.height / 2); await page.mouse.down();
+      await page.waitForTimeout(3300); await page.mouse.up(); await page.waitForTimeout(800);
+      const prog = await page.evaluate(() => JSON.parse(localStorage.getItem('gdl_progress')));
+      const overlayOpen = await page.$eval('#overlay', el => !el.hidden);
+      console.log(`  Geheim-Lösen: ${prog.done.length} Spiele erledigt, Übersicht ungewollt geöffnet: ${overlayOpen ? 'ja' : 'nein'}`);
+      await shot('solved');
+    });
   },
   /** renders assets/og-image.jpg (link preview) */
   async og() {
