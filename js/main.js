@@ -47,6 +47,11 @@ const EGGS_TOTAL = 5;
 
 /* ------------------------------------------------------------------ setup */
 const params = new URLSearchParams(location.search);
+// ?reset löscht den gespeicherten Fortschritt (z. B. nach eigenen Tests)
+if (params.has('reset')) {
+  try { Object.keys(localStorage).filter(k => k.startsWith('gdl_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
+  history.replaceState(null, '', location.pathname);
+}
 const Q = detectQuality();
 const canvas = document.getElementById('scene');
 const R = createRenderer(canvas, Q);
@@ -144,7 +149,7 @@ function build({ photoItems, textures }) {
   const shooting = new ShootingStars({ pixelRatio: R.pixelRatio });
   scene.add(shooting.group);
 
-  const planets = new Planets({ defs: PLANETS, labelRoot: $('labels') });
+  const planets = new Planets({ defs: PLANETS, labelRoot: $('labels'), onSelect: id => { if (phase === 'main' && !flying) openPlanet(PLANETS.find(p => p.id === id)); } });
   world.add(planets.group);
 
   const fireworks = new Fireworks({ max: Q.tier === 'low' ? 5000 : 9000, pixelRatio: R.pixelRatio });

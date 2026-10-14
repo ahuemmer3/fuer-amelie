@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /** Glowing planets that open games and surprises. Done = golden, locked = dim. */
 export class Planets {
-  constructor({ defs, labelRoot }) {
+  constructor({ defs, labelRoot, onSelect }) {
     this.group = new THREE.Group();
     this.list = [];
     this.labelRoot = labelRoot;
@@ -77,6 +77,8 @@ export class Planets {
       label.className = 'plabel';
       label.innerHTML = `<span class="ic">${def.icon}</span><span class="tx"></span>`;
       label.querySelector('.tx').textContent = def.title;
+      label.setAttribute('role', 'button');
+      label.addEventListener('click', () => onSelect && onSelect(def.id));
       labelRoot.appendChild(label);
 
       this.list.push({ def, group: g, mesh, mat, glow, ring, hit, label, base: g.position.clone(), bob: Math.random() * 6, hover: 0, gold: 0, locked: 0 });

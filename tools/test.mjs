@@ -169,6 +169,44 @@ const scenarios = {
       });
     }
   },
+  async tap() {
+    for (const device of ['desktop', 'iphone']) {
+      await session('tap-' + device, { device, query: '?skip&reset&q=medium' }, async (page, shot) => {
+        await waitPhase(page, 'main');
+        await page.waitForTimeout(1500);
+        // tap the planet above a visible label (the label sits just below its planet)
+        const box = await page.$eval('.plabel.show:not(.locked)', el => { const r = el.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2, name: el.textContent }; });
+        if (device === 'iphone') await page.touchscreen.tap(box.x, box.y); else await page.mouse.click(box.x, box.y);
+        await page.waitForTimeout(2200);
+        const opened = await page.$eval('#overlay', el => !el.hidden).catch(() => false);
+        console.log(`  Label „${box.name.trim()}“ angetippt → Overlay ${opened ? 'geöffnet' : 'NICHT geöffnet'}`);
+        await shot('opened');
+        await page.mouse.click(5, 5); // tap next to the panel closes it
+        await page.waitForTimeout(1800);
+        const closed = await page.$eval('#overlay', el => el.hidden);
+        console.log(`  Klick daneben → Overlay ${closed ? 'geschlossen' : 'NICHT geschlossen'}`);
+        // tap the heart
+        const heart = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight * (innerWidth < 600 ? .46 : .4) }));
+        for (let i = 0; i < 5; i++) { if (device === 'iphone') await page.touchscreen.tap(heart.x, heart.y); else await page.mouse.click(heart.x, heart.y); await page.waitForTimeout(150); }
+        await page.waitForTimeout(700);
+        await shot('heart-egg');
+        const eggs = await page.evaluate(() => JSON.parse(localStorage.getItem('gdl_progress') || '{}').eggs || []);
+        console.log(`  5× Herz → Easter Eggs: ${eggs.join(', ') || 'keins'}`);
+      });
+    }
+  },
+  /** renders assets/og-image.jpg (link preview) */
+  async og() {
+    const browser = await chromium.launch({ args: GPU_ARGS });
+    const page = await (await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })).newPage();
+    await page.goto(ORIGIN + '?skip&q=high');
+    await waitPhase(page, 'main');
+    await page.addStyleTag({ content: '#labels,#hud,#mapBtn,#hint,#toasts{display:none!important}' });
+    await page.waitForTimeout(3500);
+    await page.screenshot({ path: path.join(ROOT, 'assets', 'og-image.jpg'), type: 'jpeg', quality: 82 });
+    await browser.close();
+    console.log('✓ assets/og-image.jpg erstellt');
+  },
   async webkit() {
     await session('webkit-iphone', { device: 'iphone', engine: 'webkit', query: '?skip&q=medium' }, async (page, shot) => {
       await waitPhase(page, 'main');
@@ -181,7 +219,7 @@ const scenarios = {
   }
 };
 
-for (const [name, fn] of Object.entries(scenarios)) if (!only || only === name) await fn();
+for (const [name, fn] of Object.entries(scenarios)) if (only ? only === name : name !== 'og') await fn();
 server.close();
 console.log(problems.length ? `\n${problems.length} Szenario(s) mit Meldungen.` : '\nAlles sauber.');
 process.exit(0);

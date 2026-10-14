@@ -1,0 +1,10 @@
+Hier kannst du eine eigene MP3 ablegen (z. B. unser-lied.mp3).
+
+Danach in config.js eintragen:
+  musik: { datei: './assets/music/unser-lied.mp3', lautstaerke: 0.7 }
+
+Tipp: Dateiname klein schreiben, ohne Leerzeichen und Umlaute.
+Damit die Seite am Handy schnell lädt, die MP3 möglichst klein halten
+(128 kbit/s, ca. 3-5 MB).
+
+Ohne MP3 spielt automatisch eine sanfte, erzeugte Klangfläche.

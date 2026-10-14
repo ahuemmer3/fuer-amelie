@@ -79,7 +79,7 @@ button { font: inherit; color: inherit; }
   font: 600 .72rem var(--sans); letter-spacing: .03em; color: var(--text); background: rgba(20, 6, 26, .5); border: 1px solid var(--line);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); opacity: 0; transition: opacity .5s ease, border-color .3s, background .3s; will-change: transform; }
 .plabel .ic { font-size: .9rem; line-height: 1; }
-.plabel.show { opacity: .92; }
+.plabel.show { opacity: .92; pointer-events: auto; cursor: pointer; }
 .plabel.done { border-color: rgba(255, 207, 115, .55); color: #ffe7b0; }
 .plabel.done::after { content: "✓"; color: var(--gold); margin-left: 2px; }
 .plabel.locked { color: var(--muted); }
