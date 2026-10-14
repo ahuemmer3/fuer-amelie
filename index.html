@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Für dich ♥</title>
+  <meta name="description" content="Eine kleine Galaxie, nur für uns zwei.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#07030d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <!-- Link-Vorschau (WhatsApp, iMessage …).
+       WICHTIG: Ersetze nach dem Veröffentlichen die zwei URLs unten durch deine echte Adresse,
+       z. B. https://DEINNAME.github.io/galaxie-der-liebe/assets/og-image.jpg  (siehe README) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Für dich ♥">
+  <meta property="og:description" content="Eine kleine Galaxie, nur für uns zwei. Bitte mit Ton öffnen.">
+  <meta property="og:image" content="./assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:url" content="./">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="./css/style.css">
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="scene" aria-label="Galaxie der Liebe"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+
+  <!-- Ladebildschirm -->
+  <div id="loader" role="status" aria-live="polite">
+    <svg class="loader-heart" viewBox="0 0 100 92" aria-hidden="true">
+      <defs>
+        <clipPath id="heartClip"><path d="M50 88 C20 66 4 50 4 30 C4 14 16 4 29 4 C38 4 46 9 50 17 C54 9 62 4 71 4 C84 4 96 14 96 30 C96 50 80 66 50 88 Z"/></clipPath>
+        <linearGradient id="heartFill" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff2f6d"/><stop offset="1" stop-color="#ffb3d4"/></linearGradient>
+      </defs>
+      <rect id="loaderFill" clip-path="url(#heartClip)" x="0" y="92" width="100" height="92" fill="url(#heartFill)"/>
+      <path class="loader-outline" d="M50 88 C20 66 4 50 4 30 C4 14 16 4 29 4 C38 4 46 9 50 17 C54 9 62 4 71 4 C84 4 96 14 96 30 C96 50 80 66 50 88 Z"/>
+    </svg>
+    <p class="loader-text"><span id="loaderPct">0</span> %</p>
+    <p class="loader-sub">Sterne werden sortiert …</p>
+  </div>
+
+  <!-- Startkarte -->
+  <div id="intro" hidden>
+    <article class="card" id="card">
+      <span class="card-spark" aria-hidden="true"></span>
+      <p class="card-date" id="cardDate"></p>
+      <h1 class="card-title" id="cardTitle">Für dich</h1>
+      <p class="card-sub" id="cardSub"></p>
+      <button class="card-btn" id="openBtn" type="button"><span>Öffnen</span></button>
+      <p class="card-hint">Am schönsten mit Ton</p>
+    </article>
+  </div>
+
+  <!-- Titel in der Galaxie -->
+  <header id="title" aria-live="polite"><h2 id="titleText">Ich liebe dich</h2></header>
+
+  <!-- dezente Bedienelemente -->
+  <nav id="hud" aria-label="Steuerung">
+    <button class="hud-btn" id="musicBtn" type="button" aria-pressed="true" aria-label="Musik an oder aus">
+      <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    </button>
+    <button class="hud-btn" id="sfxBtn" type="button" aria-pressed="true" aria-label="Soundeffekte an oder aus">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg>
+    </button>
+  </nav>
+  <button class="hud-btn" id="mapBtn" type="button" aria-label="Übersicht der Planeten">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-20 12 12)"/></svg>
+    <span id="mapCount">0/11</span>
+  </button>
+  <p id="hint">Tippe auf einen Planeten</p>
+  <div id="toasts" aria-live="polite"></div>
+
+  <!-- Overlay für Spiele & Überraschungen -->
+  <div id="overlay" hidden>
+    <div class="ov-backdrop"></div>
+    <section class="ov-panel" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
+      <button class="ov-close" type="button" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <header class="ov-head">
+        <p class="ov-kicker" id="ovKicker"></p>
+        <h2 class="ov-title" id="ovTitle"></h2>
+      </header>
+      <div class="ov-body" id="ovBody"></div>
+    </section>
+  </div>
+
+  <!-- Foto-Karte -->
+  <div id="photoCard" hidden>
+    <div class="ov-backdrop"></div>
+    <figure class="pc-panel" role="dialog" aria-modal="true" aria-labelledby="pcTitle">
+      <button class="ov-close" type="button" aria-label="Schließen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+      <div class="pc-img"><img id="pcImg" alt=""></div>
+      <figcaption>
+        <h2 id="pcTitle"></h2>
+        <p id="pcText"></p>
+        <div class="pc-nav">
+          <button type="button" id="pcPrev" aria-label="Vorheriges Foto">‹</button>
+          <span id="pcIndex"></span>
+          <button type="button" id="pcNext" aria-label="Nächstes Foto">›</button>
+        </div>
+      </figcaption>
+    </figure>
+  </div>
+
+  <canvas id="confetti" hidden></canvas>
+
+  <noscript><p class="noscript">Diese Seite braucht JavaScript. Bitte aktiviere es oder öffne den Link in Safari oder Chrome.</p></noscript>
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
