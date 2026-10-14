@@ -16,7 +16,7 @@ export default function render(body, api) {
   const msg = h('p', { class: 'g-msg' });
   const rewardBox = h('div', { class: 'g-reward', hidden: true, text: reward });
   body.append(h('div', { class: 'g' }, [
-    h('p', { class: 'g-lead', html: `Fang Herzen <b>(+3)</b> und Sterne <b>(+1)</b> mit deinem Korb. Goldene Herzen geben <b>+10</b>. Pass auf die schwarzen Löcher auf: Sie ziehen deinen Korb an. Ab <b>${goal} Punkten</b> gibt es eine Belohnung.` }),
+    h('p', { class: 'g-lead', html: `Fang Herzen <b>(+3)</b> und Sterne <b>(+1)</b> mit deinem Korb. Goldene Herzen geben <b>+10</b>, Snacks <b>+5</b> (für den Hunger). Pass auf die schwarzen Löcher auf: Sie ziehen deinen Korb an. Ab <b>${goal} Punkten</b> gibt es eine Belohnung.` }),
     st.el, stage, msg, rewardBox
   ]));
   if (api.isDone()) { rewardBox.hidden = false; }
@@ -55,9 +55,9 @@ export default function render(body, api) {
   function spawn() {
     const d = Math.min(1, game.t / 45);
     const r = Math.random(), pHole = .22 + d * .16;
-    const type = r < pHole ? 'hole' : r < pHole + .3 ? 'heart' : r < pHole + .32 ? 'gold' : 'star';
+    const type = r < pHole ? 'hole' : r < pHole + .28 ? 'heart' : r < pHole + .3 ? 'gold' : r < pHole + .36 ? 'snack' : 'star';
     const fast = type === 'gold' ? 1.35 : 1;
-    game.items.push({ type, x: 24 + Math.random() * (W - 48), y: -24, vy: (150 + d * 260) * (H / 480) * (.8 + Math.random() * .45) * fast, rot: Math.random() * 6, spin: (Math.random() - .5) * 3, sway: Math.random() * 6, amp: type === 'hole' ? 60 + d * 60 : 20 });
+    game.items.push({ type, emoji: ['🍕', '🍩', '🍔', '🍫', '🧁'][Math.floor(Math.random() * 5)], x: 24 + Math.random() * (W - 48), y: -24, vy: (150 + d * 260) * (H / 480) * (.8 + Math.random() * .45) * fast, rot: Math.random() * 6, spin: (Math.random() - .5) * 3, sway: Math.random() * 6, amp: type === 'hole' ? 60 + d * 60 : 20 });
   }
 
   function burst(x, y, color, n = 12) {
@@ -86,10 +86,10 @@ export default function render(body, api) {
           st.set('lives', '♥'.repeat(g.lives) + '♡'.repeat(3 - g.lives));
           if (g.lives <= 0) { end(); return; }
         } else {
-          const pts = it.type === 'gold' ? 10 : it.type === 'heart' ? 3 : 1;
+          const pts = it.type === 'gold' ? 10 : it.type === 'snack' ? 5 : it.type === 'heart' ? 3 : 1;
           g.score += pts; st.set('score', g.score);
           burst(it.x, it.y, it.type === 'star' ? '#ffd27a' : it.type === 'gold' ? '#ffcf73' : '#ff6fb1', it.type === 'gold' ? 26 : 12);
-          g.parts.push({ x: it.x, y: it.y - 12, vx: 0, vy: -60, life: .9, text: '+' + pts, color: it.type === 'star' ? '#ffd27a' : '#ffb3d4' });
+          g.parts.push({ x: it.x, y: it.y - 12, vx: 0, vy: -60, life: .9, text: it.type === 'snack' ? '+5 Snack!' : '+' + pts, color: it.type === 'star' ? '#ffd27a' : it.type === 'snack' ? '#ffcf73' : '#ffb3d4' });
           api.sfx(it.type === 'star' ? 'catch' : 'heart');
           if (!rewarded && g.score >= goal) {
             rewarded = true; rewardBox.hidden = false; api.complete(); api.confetti({ y: .3 }); api.sfx('win');
@@ -115,6 +115,7 @@ export default function render(body, api) {
       for (const it of game.items) {
         if (it.type === 'star') drawStar(ctx, it.x, it.y, 11, it.rot);
         else if (it.type === 'hole') drawHole(it.x, it.y, 15, it.rot);
+        else if (it.type === 'snack') { ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(Math.sin(it.rot) * .4); ctx.font = '26px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(it.emoji, 0, 0); ctx.restore(); }
         else {
           ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(Math.sin(it.rot) * .3);
           ctx.shadowColor = it.type === 'gold' ? '#ffcf73' : '#ff4fa3'; ctx.shadowBlur = 16;

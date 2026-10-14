@@ -20,6 +20,9 @@ import { WishStars } from './scene/wishstars.js';
 import { CardDissolve } from './intro/card.js';
 import { Warp } from './intro/warp.js';
 import { Journey } from './intro/journey.js';
+import { SkyFlight } from './intro/sky.js';
+import { Karaoke } from './ui/karaoke.js';
+import { buildSong, buildHappyBirthday, buildSkyTheme } from './core/songs.js';
 import { Overlay } from './ui/overlay.js';
 import { PhotoCard } from './ui/photo-card.js';
 import { toast, confetti } from './ui/feedback.js';
@@ -39,6 +42,8 @@ const PLANETS = [
   { id: 'wunschstern', title: 'Wunschstern', icon: '🌠', color: '#7fd8ff', kind: 'spiel', module: './games/wish.js' },
   { id: 'herzsuche', title: 'Finde das Herz', icon: '🔍', color: '#ff5f7e', kind: 'spiel', module: './games/hidden-heart.js' },
   { id: 'gruende', title: 'Gründe', icon: '💌', color: '#ff7ab8', kind: 'ueberraschung', module: './pages/reasons.js', ring: true },
+  { id: 'song', title: 'Dein Song', icon: '🎤', color: '#ff5fa8', kind: 'ueberraschung', module: './pages/song.js' },
+  { id: 'sehtest', title: 'Sehtest', icon: '👓', color: '#8fd0ff', kind: 'ueberraschung', module: './pages/eyetest.js' },
   { id: 'geheimfach', title: 'Geheimfach', icon: '🔐', color: '#b38cff', kind: 'spiel', module: './games/secret.js' },
   { id: 'umlaufbahn', title: 'Umlaufbahn', icon: '🪐', color: '#ff9ed2', kind: 'spiel', module: './games/orbit.js', ring: true },
   { id: 'finale', title: 'Das letzte Geheimnis', icon: '💛', color: '#ffcf73', kind: 'finale', module: './pages/final-letter.js' }
@@ -49,11 +54,13 @@ const EGGS_TOTAL = 5;
 
 /* ------------------------------------------------------------------ setup */
 const params = new URLSearchParams(location.search);
-// ?reset löscht den gespeicherten Fortschritt (z. B. nach eigenen Tests)
-if (params.has('reset')) {
+// ?reset (oder testModus in config.js) löscht den gespeicherten Fortschritt
+if (params.has('reset') || CONFIG.testModus) {
   try { Object.keys(localStorage).filter(k => k.startsWith('gdl_')).forEach(k => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
-  history.replaceState(null, '', location.pathname);
+  Progress.reset();
+  if (params.has('reset')) history.replaceState(null, '', location.pathname + location.search.replace(/[?&]reset/, '').replace(/^&/, '?'));
 }
+if (CONFIG.testModus) document.getElementById('testBadge').hidden = false;
 const Q = detectQuality();
 const canvas = document.getElementById('scene');
 const R = createRenderer(canvas, Q);
@@ -229,6 +236,8 @@ function makeApi(def) {
     fireworks: (count = 3) => celebrate(count),
     heartRain: () => objects.floaters.rain(70),
     epic: on => Sound.setEpic(on),
+    songLyrics: () => buildSong(Sound).lyrics,
+    playSong: which => { Sound.ensureStarted({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke }); overlay.close(); setTimeout(() => playKaraoke(which, () => Sound.releaseAmbient()), 420); },
     birthdaySong: () => Sound.happyBirthday(),
     eggCount: () => Progress.eggs().length,
     eggsTotal: EGGS_TOTAL
@@ -245,6 +254,7 @@ async function openPlanet(def, { fly = true } = {}) {
     return;
   }
   hideHint();
+  if (Sound.seqPlaying()) { Sound.stopSeq(); karaoke.hide(); Sound.releaseAmbient(); }
   Sound.play('whoosh');
   const modPromise = import(def.module);
   if (fly) await flyTo(p);
@@ -529,66 +539,147 @@ let hintShown = false;
 function hideHint() { if (!hintShown) return; hintShown = false; $('hint').classList.remove('show'); }
 
 /* ------------------------------------------------------------------ intro */
-let dissolve, warp, journey, portraitTextures = [], warpStarted = false;
+// timeline in seconds after tapping "Öffnen":
+// card → particles (0–1.25) · fairy-tale flight (1.25–13.25) · warp + journey through space · arrival in the heart
+// → surprise party → Happy Birthday → the song for Amelie
+let dissolve, warp, journey, sky, portraitTextures = [];
+let skyStarted = false, skyEnded = false, arrived = false, flashed = {};
 const tmpV = new THREE.Vector3();
-const J_START = 2.6, J_DUR = 9.4, J_ARRIVE = 8.23;   // journey timing (s); arrival = when both portraits reach the heart
+const SKY_START = 1.25, SKY_DUR = 12, SPACE_START = SKY_START + SKY_DUR;
+const J_START = SPACE_START + .6, J_DUR = 8, J_ARRIVE = .779 * J_DUR + .9;
+const ARRIVE_AT = J_START + J_ARRIVE;
 const HEART_POS = new THREE.Vector3(0, 5.1, 0);
+const BLOOM = { strength: R.bloom.strength, threshold: R.bloom.threshold, exposure: R.renderer.toneMappingExposure };
 
 function startIntro() {
   phase = 'intro'; introT = 0;
-  Sound.start({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke, holdAmbient: J_START + J_ARRIVE + .5 });
+  Sound.start({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke, holdAmbient: Infinity });
   enableTilt();
   Sound.play('open');
   dissolve = new CardDissolve({ camera, pixelRatio: R.pixelRatio, maxCount: Q.tier === 'low' ? 7000 : 13000 });
   dissolve.build($('card'));
   $('intro').classList.add('leaving');
   setTimeout(() => { $('intro').hidden = true; }, 460);
+  $('letterbox').classList.add('on');
+  const intro = CONFIG.intro || {};
   warp = new Warp({ camera, count: Q.warp });
-  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: (CONFIG.intro && CONFIG.intro.zeilen) || [] });
+  sky = new SkyFlight({ camera, portraits: portraitTextures, quality: Q, captionsEl: $('cine'), lines: intro.himmel || [] });
+  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: intro.weltall || intro.zeilen || [] });
   setTimeout(() => { if (phase === 'intro') $('skipBtn').hidden = false; }, 1500);
+}
+
+function flash(kind = 'go') {
+  const f = $('flash');
+  f.classList.remove('go', 'white'); void f.offsetWidth; f.classList.add(kind);
+}
+
+function enterSky() {
+  skyStarted = true;
+  sky.scene.add(camera);
+  R.setScene(sky.scene);
+  R.bloom.strength = .32; R.bloom.threshold = .93;
+  R.renderer.toneMappingExposure = .82;
+  $('cine').classList.add('sky');
+  sky.start();
+  if (Sound.ctx) { Sound.playNow(buildSkyTheme(Sound)); Sound.wind(true); }
+}
+
+function leaveSky() {
+  skyEnded = true;
+  scene.add(camera);
+  R.setScene(scene);
+  R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold;
+  R.renderer.toneMappingExposure = BLOOM.exposure;
+  $('cine').classList.remove('sky');
+  sky.dispose();
+  Sound.wind(false);
+  camera.position.copy(journey.startPos);
+  camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
+  warp.start();
+  Sound.play('whoosh');
+  Sound.cinematic(ARRIVE_AT - SPACE_START);
 }
 
 function updateIntro(dt) {
   introT += dt;
   dissolve && dissolve.update(dt);
-  if (!warpStarted && introT > .35) { warpStarted = true; warp.start(); Sound.play('whoosh'); Sound.cinematic(J_START + J_ARRIVE - .35); }
-  if (warp && warp.active) warp.update(dt);
-  if (introT < J_START) {
-    // hold at the start of the journey and turn smoothly towards the beam
-    const look = journey.beamSamples[Math.round(.085 * (journey.beamSamples.length - 1))];
-    camera.position.copy(journey.startPos);
-    tmpV.lerpVectors(START_TARGET, look, ease.inOutCubic(clamp(introT / J_START, 0, 1)));
-    camera.lookAt(tmpV);
-  } else {
-    if (journey.t < 0) journey.start(J_DUR);
-    if (journey.update(dt) === 'arrive') onArrive();
+  if (!flashed.a && introT >= SKY_START - .25) { flashed.a = true; flash('white'); }
+  if (!skyStarted && introT >= SKY_START) enterSky();
+  if (skyStarted && !skyEnded) {
+    if (!flashed.b && sky.t >= SKY_DUR - .25) { flashed.b = true; flash('white'); }
+    if (sky.update(dt) === 'done') leaveSky();
   }
-  fade = ease.inOutSine(clamp((introT - 3.6) / 6.5, 0, 1));
-  const end = J_START + J_DUR;
-  if (introT > end + .2) $('title').classList.add('show');
-  if (introT > end + .7) { $('hud').classList.add('show'); $('mapBtn').classList.add('show'); }
-  if (introT > end + 1) enterMain();
+  if (skyEnded) {
+    if (warp.active) warp.update(dt);
+    if (introT >= J_START) {
+      if (journey.t < 0) journey.start(J_DUR);
+      if (journey.update(dt) === 'arrive') onArrive();
+    } else {
+      camera.position.copy(journey.startPos);
+      camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
+    }
+  }
+  fade = skyEnded ? ease.inOutSine(clamp((introT - SPACE_START - .4) / 5.5, 0, 1)) : 0;
+  if (introT > J_START + J_DUR + .4) enterMain();
 }
 
-/** the two portraits reach the heart: it bursts and re-forms */
+/** the two portraits reach the heart: it bursts, then the surprise party starts */
 function onArrive() {
+  if (arrived) return;
+  arrived = true;
   objects.heart.explode();
   const hp = objects.heart.group.getWorldPosition(new THREE.Vector3());
   objects.fireworks.burst(hp, { count: Q.tier === 'low' ? 600 : 1100, color: '#ff4fa3', speed: 6, heart: true });
   objects.fireworks.burst(hp, { count: 400, color: '#ffcf73', speed: 3.5 });
-  const f = $('flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
-  setTimeout(() => celebrate(3), 400);
+  flash('go');
+  $('letterbox').classList.remove('on');
+  surpriseParty();
+}
+
+function surpriseParty() {
+  Sound.party();
+  const el = $('surprise');
+  el.hidden = false; el.classList.remove('go'); void el.offsetWidth; el.classList.add('go');
+  confetti({ count: 150, x: .06, y: .96 });
+  setTimeout(() => confetti({ count: 150, x: .94, y: .96 }), 120);
+  setTimeout(() => celebrate(5), 300);
+  objects.floaters.rain(70);
+  setTimeout(() => { el.hidden = true; }, 3000);
+  // Happy Birthday, then the song
+  setTimeout(() => { if (Sound.ctx) playKaraoke('hb', () => setTimeout(() => playKaraoke('song', () => Sound.releaseAmbient()), 700)); }, 2800);
+}
+
+const karaoke = new Karaoke({ root: $('karaoke'), onStop: () => { Sound.stopSeq(); Sound.releaseAmbient(); } });
+function playKaraoke(which, onEnd) {
+  if (!Sound.ctx) return;
+  const hb = which === 'hb';
+  const seq = hb ? buildHappyBirthday(Sound) : buildSong(Sound);
+  Sound.playSeq(seq, { onEnd: () => { karaoke.hide(); onEnd && onEnd(); } });
+  karaoke.play({
+    title: hb ? 'Happy Birthday' : '»Amelie«',
+    sub: hb ? 'Alle singen mit!' : `Ein Song für dich · Text & Musik: ${CONFIG.deinName}`,
+    lines: seq.lyrics,
+    time: () => Sound.seqTime()
+  });
 }
 
 function skipIntro() {
   if (phase !== 'intro') return;
   dissolve && dissolve.dispose();
+  if (!skyEnded) {
+    if (skyStarted) { scene.add(camera); R.setScene(scene); R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; R.renderer.toneMappingExposure = BLOOM.exposure; }
+    skyStarted = skyEnded = true;
+    sky.dispose();
+  }
+  Sound.wind(false);
   if (warp && warp.active) warp.stop();
   journey && journey.finish();
   Sound.skipCinematic();
   $('intro').hidden = true;
+  $('cine').classList.remove('in', 'sky');
   fade = 1;
   enterMain();
+  if (!arrived) setTimeout(onArrive, 350);
 }
 $('skipBtn').addEventListener('click', skipIntro);
 
@@ -604,6 +695,7 @@ function enterMain(home = homeView()) {
   controls.update();
   objects.shooting.enabled = true;
   $('title').classList.add('show'); $('hud').classList.add('show'); $('mapBtn').classList.add('show');
+  setTimeout(() => $('letterbox').classList.remove('on'), 400);
   guard.pause(3);
   if (!Progress.doneCount(REQUIRED)) setTimeout(() => { hintShown = true; $('hint').classList.add('show'); }, 900);
 }
@@ -653,7 +745,7 @@ function frame() {
 
   if (phase === 'main' && controls.enabled && !flying) controls.update(dt);
   updateHover();
-  R.updateLens(o.blackHole.group.getWorldPosition(tmpV), 1.25, .3 * fade);
+  R.updateLens(o.blackHole.group.getWorldPosition(tmpV), 1.25, skyStarted && !skyEnded ? 0 : .3 * fade);
   R.render(t);
   if (phase === 'main' && !flying) guard.update(dt);
 }
@@ -680,7 +772,7 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { cl
     portraitTextures = assets.portraits;
     refreshPlanetStates();
     Progress.onChange(refreshPlanetStates);
-    window.__galaxy = { quality: Q, fps: () => guard.fps, phase: () => phase, open: id => openPlanet(PLANETS.find(p => p.id === id), { fly: false }) };
+    window.__galaxy = { quality: Q, fps: () => guard.fps, phase: () => phase, introT: () => introT, open: id => openPlanet(PLANETS.find(p => p.id === id), { fly: false }), party: () => onArrive() };
     clock.getDelta();
     requestAnimationFrame(frame);
     setProgress(1);

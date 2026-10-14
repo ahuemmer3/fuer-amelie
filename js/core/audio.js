@@ -7,6 +7,8 @@
  *  - small sound effects
  * An analyser lets the heart and the accretion disk react to the music.
  */
+import { createBand } from './band.js';
+
 const midi = n => 440 * Math.pow(2, (n - 69) / 12);
 
 const CHORDS = [
@@ -61,6 +63,7 @@ class AudioEngine {
     this.music = bus();     // ambient / MP3
     this.cine = bus();      // intro swell
     this.epic = bus();      // catch game track
+    this.song = bus();      // happy birthday + the song for Amelie
     this.sfx = ctx.createGain(); this.sfx.gain.value = .5; this.sfx.connect(this.master);
 
     // reverb + delay shared by the generated music
@@ -73,24 +76,41 @@ class AudioEngine {
     const bv = ctx.createGain(); bv.gain.value = .8; this.bigVerb.connect(bv); bv.connect(this.cine);
     this.epicVerb = ctx.createConvolver(); this.epicVerb.buffer = this.impulse(1.8);
     const ev = ctx.createGain(); ev.gain.value = .35; this.epicVerb.connect(ev); ev.connect(this.epic);
+    this.songVerb = ctx.createConvolver(); this.songVerb.buffer = this.impulse(2.4);
+    const sv = ctx.createGain(); sv.gain.value = .6; this.songVerb.connect(sv); sv.connect(this.song);
 
-    this.ambientHold = ctx.currentTime + holdAmbient;
+    // the ambient score can be held back until releaseAmbient() (intro, party, songs)
+    this.ambientHold = holdAmbient === Infinity ? Infinity : ctx.currentTime + holdAmbient;
     if (file) {
       const el = this.el = new Audio();
       el.src = file; el.loop = true; el.preload = 'auto'; el.playsInline = true;
       ctx.createMediaElementSource(el).connect(this.music);
       this.mode = 'file';
       el.addEventListener('error', () => { if (this.mode === 'file') this.useGenerated(); }, { once: true });
-      el.play().catch(() => {});
+      if (holdAmbient === 0) el.play().catch(() => {});
     } else this.useGenerated();
     this.musicOn = true;
-    this.mix(holdAmbient);
+    this.band = createBand(this);
+    this.mix();
+  }
+
+  /** used when the intro was skipped via ?skip: a tap later still starts the audio */
+  ensureStarted(cfg) { if (!this.ctx) this.start({ ...cfg, holdAmbient: 0 }); else if (this.ctx.state === 'suspended') this.ctx.resume(); }
+
+  ambientAllowed() { return this.ctx && this.ctx.currentTime >= this.ambientHold && !this.songOn && !this.epicOn; }
+
+  /** lets the calm galaxy score play (after intro / party / songs) */
+  releaseAmbient() {
+    if (!this.ctx) return;
+    this.ambientHold = this.ctx.currentTime;
+    if (this.mode === 'gen') this.nextBar = this.ctx.currentTime + .2;
+    this.mix();
   }
 
   useGenerated() {
     this.mode = 'gen';
     if (this.el) { this.el.pause(); this.el = null; }
-    this.nextBar = Math.max(this.ctx.currentTime + .1, this.ambientHold - 2);
+    this.nextBar = this.ctx.currentTime + .1;
     clearInterval(this.timer);
     this.timer = setInterval(() => this.schedule(), 150);
   }
@@ -100,11 +120,12 @@ class AudioEngine {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     const set = (g, v, tc, d = 0) => { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.setTargetAtTime(v, now + d, tc); };
-    // the ambient score can be held back (e.g. while the intro swell plays)
-    set(this.music, this.musicOn && !this.epicOn ? this.volume : 0, this.epicOn ? .4 : 1.2, delay);
+    const ambient = this.musicOn && this.ambientAllowed();
+    set(this.music, ambient ? this.volume : 0, this.epicOn || this.songOn ? .4 : 1.2, delay);
     set(this.epic, this.musicOn && this.epicOn ? this.volume * .85 : 0, .3);
     set(this.cine, this.musicOn && now > (this.cineMutedUntil || 0) ? this.volume : 0, .05);
-    if (this.el) { if (this.musicOn && !this.epicOn) this.el.play().catch(() => {}); }
+    set(this.song, this.musicOn ? this.volume : 0, .08);
+    if (this.el) { if (ambient) this.el.play().catch(() => {}); else if (this.songOn || this.epicOn) setTimeout(() => !this.ambientAllowed() && this.el && this.el.pause(), 700); }
   }
 
   impulse(seconds) {
@@ -116,7 +137,7 @@ class AudioEngine {
 
   /* ------------------------------------------------ ambient score */
   schedule() {
-    if (!this.musicOn || this.mode !== 'gen' || this.epicOn) return;
+    if (!this.musicOn || this.mode !== 'gen' || !this.ambientAllowed()) return;
     const ctx = this.ctx;
     if (this.nextBar < ctx.currentTime) this.nextBar = ctx.currentTime + .05;
     while (this.nextBar < ctx.currentTime + 1.2) {
@@ -225,10 +246,73 @@ class AudioEngine {
   skipCinematic() {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
-    this.cineMutedUntil = now + 14;
-    this.ambientHold = now;
-    if (this.mode === 'gen') this.nextBar = now + .1;
+    this.cineMutedUntil = now + 30;
+    this.wind(false);
     this.mix();
+  }
+
+  /* ------------------------------------------------ sequencer (songs, karaoke) */
+  /** plays a list of {t, fn(time)} events with a look-ahead scheduler; returns the AudioContext start time */
+  playSeq(seq, { onEnd, song = true } = {}) {
+    if (!this.ctx) return -1;
+    this.stopSeq(false);
+    const start = this.ctx.currentTime + .15;
+    const s = this.seq = { events: seq.events, i: 0, start, end: start + seq.duration, onEnd, song };
+    s.timer = setInterval(() => this.pumpSeq(s), 40);
+    this.pumpSeq(s);
+    if (song) { this.songOn = true; this.mix(); }
+    return start;
+  }
+  pumpSeq(s) {
+    if (this.seq !== s) return;
+    const now = this.ctx.currentTime;
+    while (s.i < s.events.length && s.start + s.events[s.i].t < now + .35) { const e = s.events[s.i++]; try { e.fn(s.start + e.t); } catch (err) { console.error(err); } }
+    if (s.i >= s.events.length && now > s.end) { this.stopSeq(false); s.onEnd && s.onEnd(); }
+  }
+  stopSeq(fade = true) {
+    const s = this.seq;
+    if (!s) return;
+    clearInterval(s.timer); this.seq = null;
+    if (fade && this.ctx) {
+      const now = this.ctx.currentTime, g = this.song.gain;
+      g.cancelScheduledValues(now); g.setValueAtTime(g.value, now); g.linearRampToValueAtTime(0, now + .5);
+      setTimeout(() => { this.songOn = false; this.mix(); }, 700);
+    } else { this.songOn = false; this.mix(); }
+  }
+  seqTime() { return this.seq && this.ctx ? this.ctx.currentTime - this.seq.start : -1; }
+  /** schedules a short piece completely right now (intro music) */
+  playNow(seq) { if (!this.ctx) return; const t0 = this.ctx.currentTime + .05; seq.events.forEach(e => { try { e.fn(t0 + e.t); } catch (err) { console.error(err); } }); }
+  seqPlaying() { return !!this.seq; }
+
+  /** wind noise while flying through the clouds */
+  wind(on) {
+    if (!this.ctx) return;
+    const ctx = this.ctx, now = ctx.currentTime;
+    if (on && !this.windSrc) {
+      const src = ctx.createBufferSource(); src.buffer = this.noiseBuf(); src.loop = true;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520; lp.Q.value = .6;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = .23; lg.gain.value = 260; lfo.connect(lg); lg.connect(lp.frequency);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(.16, now + 1.5);
+      src.connect(lp); lp.connect(g); g.connect(this.cine); src.start(now); lfo.start(now);
+      this.windSrc = { src, lfo, g };
+    } else if (!on && this.windSrc) {
+      const w = this.windSrc; this.windSrc = null;
+      w.g.gain.cancelScheduledValues(now); w.g.gain.setValueAtTime(w.g.gain.value, now); w.g.gain.linearRampToValueAtTime(0, now + 1.2);
+      w.src.stop(now + 1.3); w.lfo.stop(now + 1.3);
+    }
+  }
+
+  /** the surprise party: poppers, party horns, applause, whistles and a few "woo!"s */
+  party() {
+    if (!this.ctx) return;
+    const b = this.band, bus = this.sfxOn ? this.sfx : this.song, t = this.ctx.currentTime + .03;
+    [0, .07, .16, .5].forEach((d, i) => b.pop(t + d, { bus, vel: .55 - i * .08 }));
+    b.horn(t + .05, .9, { bus, pitch: 1 });
+    b.horn(t + .3, .7, { bus, pitch: 1.26 });
+    b.horn(t + 1.25, 1, { bus, pitch: 1.12 });
+    b.applause(t + .1, 2.8, { bus, vel: .11 });
+    b.whistle(t + .45, { bus }); b.whistle(t + 1.4, { bus, vel: .05 });
+    b.woo(t + .2, { bus }); b.woo(t + 1.1, { bus, vel: .035 });
   }
 
   /* ------------------------------------------------ epic track (catch game only) */

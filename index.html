@@ -68,10 +68,24 @@
     </article>
   </div>
 
-  <!-- Intro-Reise: Texte, Überspringen, Lichtblitz -->
+  <!-- Intro-Film: Kinobalken, Texte, Überspringen, Lichtblitz -->
+  <div id="letterbox" aria-hidden="true"><i></i><i></i></div>
   <p id="cine" aria-live="polite"></p>
   <button id="skipBtn" type="button" hidden>Überspringen ›</button>
   <div id="flash" aria-hidden="true"></div>
+  <div id="surprise" hidden><p class="sp-main">Überraschung!</p><p class="sp-sub">🎉 Happy Birthday 🎉</p></div>
+
+  <!-- Karaoke für Happy Birthday und den Song -->
+  <section id="karaoke" hidden aria-live="polite">
+    <div class="kar-head">
+      <div class="kar-meta"><span class="kar-title"></span><span class="kar-sub"></span></div>
+      <button class="kar-stop" type="button">Musik stoppen</button>
+      <button class="kar-hide" type="button" aria-label="Text ausblenden">✕</button>
+    </div>
+    <p class="kar-line"></p>
+    <p class="kar-next"></p>
+  </section>
+  <p id="testBadge" hidden>Testmodus: Fortschritt wird beim Neuladen gelöscht</p>
 
   <!-- Titel in der Galaxie -->
   <header id="title" aria-live="polite"><h2 id="titleText">Ich liebe dich</h2></header>

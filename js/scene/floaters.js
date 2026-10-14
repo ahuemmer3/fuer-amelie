@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { rand, pick } from '../core/utils.js';
 
-const EMOJIS = ['💖', '💕', '✨', '💗', '🌸', '💫', '🥰', '💞', '⭐', '🫶'];
+const EMOJIS = ['💖', '🎈', '✨', '🎉', '🎁', '💫', '🥳', '💞', '🍰', '🎈', '⭐', '🍕'];
 
 function emojiTexture(ch) {
   const c = document.createElement('canvas'); c.width = c.height = 128;

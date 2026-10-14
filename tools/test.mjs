@@ -71,25 +71,38 @@ const scenarios = {
     }
   },
   async intro() {
-    for (const device of ['desktop', 'iphone']) {
+    const devs = (process.argv[3] || 'desktop,iphone').split(',');
+    for (const device of devs) {
       await session('intro-' + device, { device, query: device === 'iphone' ? '?q=medium' : '?q=high' }, async (page, shot) => {
         await page.waitForSelector('#intro:not([hidden])');
-        await page.waitForTimeout(1600);
-        await shot('1-card');
+        await page.waitForTimeout(1200); await shot('01-card');
         await page.click('#openBtn');
-        await page.waitForTimeout(500); await shot('2-dissolve');
-        await page.waitForTimeout(1300); await shot('3-warp');
-        await page.waitForTimeout(2400); await shot('4-journey-a');
-        await page.waitForTimeout(2300); await shot('5-journey-b');
-        await page.waitForTimeout(2300); await shot('6-journey-c');
-        await page.waitForTimeout(1900); await shot('7-arrive');
-        await waitPhase(page, 'main');
-        await page.waitForTimeout(1500); await shot('8-main');
+        const at = async (sec, label) => {
+          await page.waitForFunction(x => window.__galaxy.introT() >= x || window.__galaxy.phase() === 'main', sec, { timeout: 60000 });
+          await shot(label);
+        };
+        await at(.6, '02-dissolve'); await at(2.6, '03-sky-a'); await at(5.6, '04-sky-b'); await at(8.6, '05-sky-c'); await at(11.9, '06-sky-space');
+        await at(14.6, '07-warp'); await at(17.6, '08-journey'); await at(20.9, '09-arrive');
+        await waitPhase(page, 'main'); await page.waitForTimeout(700); await shot('10-party');
+        await page.waitForTimeout(5000); await shot('11-happy-birthday');
+        await page.waitForFunction(() => (document.querySelector('.kar-title') || {}).textContent === '»Amelie«', null, { timeout: 40000 });
+        await page.waitForTimeout(15000); await shot('12-song');
+        const playing = await page.evaluate(() => !document.getElementById('karaoke').hidden);
+        console.log(`  Karaoke sichtbar: ${playing ? 'ja' : 'nein'}`);
       });
     }
   },
+  async sky() {
+    await session('sky', { device: process.argv[3] || 'desktop', query: '?q=high' }, async (page, shot) => {
+      await page.waitForSelector('#intro:not([hidden])'); await page.waitForTimeout(800);
+      await page.click('#openBtn');
+      for (const [sec, label] of [[2.2, 'a'], [4.2, 'b'], [6.4, 'c'], [8.6, 'd'], [10.6, 'e'], [12.6, 'f']]) {
+        await page.waitForFunction(x => window.__galaxy.introT() >= x, sec, { timeout: 60000 }); await shot(label);
+      }
+    });
+  },
   async games() {
-    const ids = (process.argv[3] || 'fangen,torte,memory,quiz,sternbild,rubbellos,gluecksrad,puzzle,wunschstern,herzsuche,geheimfach,umlaufbahn,zeit,momente,gruende,finale').split(',');
+    const ids = (process.argv[3] || 'fangen,torte,song,sehtest,memory,quiz,sternbild,rubbellos,gluecksrad,puzzle,wunschstern,herzsuche,geheimfach,umlaufbahn,zeit,momente,gruende,finale').split(',');
     for (const device of ['desktop', 'iphone']) {
       await session('games-' + device, { device, query: '?skip&q=low' }, async (page, shot) => {
         await waitPhase(page, 'main');

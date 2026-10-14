@@ -13,6 +13,11 @@ finaler Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Bui
 **Alles Persönliche steht in [`config.js`](config.js).** Ändere nur die Texte zwischen den
 Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 
+> **Testmodus:** Ganz oben in `config.js` steht `testModus: true`. Dann wird der Spielstand bei
+> jedem Laden der Seite zurückgesetzt, praktisch zum Ausprobieren. **Bevor du Amelie den Link
+> schickst: auf `false` stellen**, sonst verliert sie ihren Fortschritt beim Neuladen. Solange der
+> Testmodus an ist, steht oben links ein kleiner gelber Hinweis.
+
 | Was | Wo in `config.js` |
 |---|---|
 | Ihr Name (taucht in Texten auf, ist auch ein Easter-Egg-Codewort) | `ihrName` |
@@ -21,7 +26,7 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 | Initialen fürs Sternbild-Spiel | `initialen: ['A', 'L']` |
 | Startkarte (Titel, Untertitel, Datum, Button) | `karte` |
 | Großer Schriftzug (wechselt) | `titel` |
-| Texte der Intro-Reise, Porträts | `intro` |
+| Texte im Intro-Film (Märchenflug + Weltall), Porträts | `intro.himmel`, `intro.weltall` |
 | Geburtstagstorte (Kerzen, Wunsch) | `geburtstag` |
 | Farben | `farben` |
 | Musik | `musik.datei` |
@@ -156,13 +161,20 @@ Vorschau deshalb am besten erst, wenn alles fertig ist (z. B. indem du dir selbs
 - **Neigen am iPhone:** Beim Tippen auf „Öffnen“ fragt Safari, ob die Seite die
   Bewegungssensoren nutzen darf. Mit „Erlauben“ bewegt sich die Galaxie leicht mit.
 
+### Der Song „Amelie“
+
+Text, Melodie und Arrangement stehen in [`js/core/songs.js`](js/core/songs.js). Jede Zeile hat das
+Format `silbe:NOTE:DAUER`. Du kannst Wörter austauschen, solange jede Zeile gleich viele Silben
+behält. Die Musik wird live im Browser erzeugt, es gibt keine Musikdatei.
+
 ### Geheime Abkürzungen (nur ihr zwei wisst davon)
 
 - **Alles lösen:** 3 Sekunden auf den Planeten-Zähler unten rechts (z. B. „4/11“) drücken.
   Alle Spiele gelten als geschafft und das letzte Geheimnis (der Brief) öffnet sich.
 - **Ein Spiel lösen:** In einem offenen Spiel 2 Sekunden auf die Überschrift drücken.
   Nur dieses Spiel gilt dann als geschafft.
-- **Intro überspringen:** Während des Flugs erscheint unten rechts „Überspringen“.
+- **Intro überspringen:** Während des Films erscheint unten rechts „Überspringen“. Damit geht es
+  direkt zur Überraschungsparty mit Happy Birthday und Song.
 
 ### Easter Eggs (Spoiler, nur für dich)
 

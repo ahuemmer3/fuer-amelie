@@ -6,7 +6,7 @@ export const title = 'Finde das versteckte Herz';
 const ROUNDS = [
   { n: 6, find: '❤️', among: ['🧡'], hint: 'Ein rotes Herz versteckt sich zwischen den orangenen.' },
   { n: 8, find: '💖', among: ['💗'], hint: 'Jetzt wird’s kniffliger: Welches Herz funkelt?' },
-  { n: 9, find: '❤️', among: ['🍓', '🌹', '🍒'], hint: 'Letzte Runde: Ein Herz zwischen lauter roten Dingen.' }
+  { n: 9, find: '❤️', among: ['🍕', '🍔', '🍩', '🍟', '🌭'], hint: 'Letzte Runde: Ein Herz zwischen lauter Essen. Konzentrier dich, nicht hungrig werden!' }
 ];
 
 export default function render(body, api) {

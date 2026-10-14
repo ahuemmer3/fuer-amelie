@@ -337,3 +337,60 @@ body.overlay-open #toasts { top: auto; bottom: calc(var(--safe-b) + 14px); }
 @keyframes flash { 0% { opacity: 0; } 8% { opacity: 1; } 100% { opacity: 0; } }
 #title h2 { transition: opacity .9s ease; }
 #title h2.swap { opacity: 0; }
+
+/* ---------- intro film ---------- */
+#letterbox { position: fixed; inset: 0; z-index: 34; pointer-events: none; }
+#letterbox i { position: absolute; left: 0; right: 0; height: 10vh; background: #000; transition: transform 1.2s cubic-bezier(.6, 0, .3, 1); }
+#letterbox i:first-child { top: 0; transform: translateY(-100%); }
+#letterbox i:last-child { bottom: 0; transform: translateY(100%); }
+#letterbox.on i { transform: none; }
+#cine.sky { color: #fff; left: 50%; right: auto; width: min(760px, 92vw); transform: translateX(-50%); padding: 22px 30px; background: radial-gradient(closest-side, rgba(52, 8, 56, .62), rgba(52, 8, 56, 0)); text-shadow: 0 2px 6px rgba(40, 0, 40, .8), 0 0 22px rgba(255, 90, 170, .6); }
+#cine.sky.in { animation-name: cineInSky; }
+@keyframes cineInSky { 0% { opacity: 0; filter: blur(8px); } 22% { opacity: 1; filter: none; } 78% { opacity: 1; } 100% { opacity: 0; filter: blur(4px); } }
+#flash.white { background: #fff6fb; animation: flashSwitch .62s ease-in-out; }
+@keyframes flashSwitch { 0% { opacity: 0; } 40% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------- surprise party ---------- */
+#surprise { position: fixed; inset: 0; z-index: 46; display: grid; place-content: center; justify-items: center; gap: 6px; pointer-events: none; text-align: center; }
+#surprise .sp-main { margin: 0; font: 800 clamp(3rem, 13vw, 7.5rem)/1 var(--sans); letter-spacing: -.02em; text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 10%, #ffd6ea 45%, #ff4fa3 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+  filter: drop-shadow(0 6px 0 rgba(120, 10, 70, .55)) drop-shadow(0 0 30px rgba(255, 79, 163, .9)); }
+#surprise .sp-sub { margin: 0; font: 400 clamp(2rem, 8vw, 3.6rem)/1.1 var(--script); color: #fff; text-shadow: 0 0 20px rgba(255, 90, 170, .9); }
+#surprise.go .sp-main { animation: spPop 2.8s cubic-bezier(.2, 1.4, .4, 1) both; }
+#surprise.go .sp-sub { animation: spPop 2.8s cubic-bezier(.2, 1.4, .4, 1) .25s both; }
+@keyframes spPop { 0% { opacity: 0; transform: scale(.3) rotate(-8deg); } 14% { opacity: 1; transform: scale(1.12) rotate(2deg); } 22% { transform: scale(1) rotate(-1deg); } 82% { opacity: 1; transform: scale(1.03); } 100% { opacity: 0; transform: scale(1.25); filter: blur(8px); } }
+
+/* ---------- karaoke ---------- */
+#karaoke { position: fixed; left: 50%; bottom: calc(var(--safe-b) + 74px); z-index: 28; width: min(720px, calc(100% - 24px)); transform: translate(-50%, 20px); opacity: 0;
+  padding: 12px 16px 16px; border-radius: 24px; background: linear-gradient(180deg, rgba(40, 8, 44, .55), rgba(12, 3, 18, .78)); border: 1px solid rgba(255, 170, 215, .25);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 20px 60px -20px rgba(255, 50, 150, .6); transition: opacity .5s ease, transform .5s ease; text-align: center; }
+#karaoke.in { opacity: 1; transform: translate(-50%, 0); }
+.kar-head { display: flex; align-items: center; gap: 8px; text-align: left; }
+.kar-meta { display: grid; flex: 1; min-width: 0; }
+.kar-title { font: 400 1.5rem/1.1 var(--script); color: #fff; text-shadow: 0 0 12px rgba(255, 90, 170, .8); }
+.kar-sub { font: 600 .68rem var(--sans); letter-spacing: .08em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kar-stop, .kar-hide { flex: none; border: 1px solid var(--line); background: rgba(255, 255, 255, .05); color: var(--blush); border-radius: 999px; cursor: pointer; font: 600 .72rem var(--sans); padding: 8px 12px; }
+.kar-hide { width: 34px; height: 34px; padding: 0; font-size: .9rem; }
+.kar-line { margin: 10px 0 4px; min-height: 2.6em; display: flex; flex-wrap: wrap; justify-content: center; align-content: center; font: 700 clamp(1.25rem, 4.6vw, 1.9rem)/1.3 var(--sans); color: rgba(255, 255, 255, .55); text-wrap: balance; }
+.kar-line span { --p: 0%; white-space: pre; background: linear-gradient(90deg, #ffd27a 0%, #ff8fc7 var(--p), rgba(255, 255, 255, .55) var(--p)); -webkit-background-clip: text; background-clip: text; color: transparent; transition: transform .15s; }
+.kar-line span.now { transform: translateY(-2px) scale(1.06); filter: drop-shadow(0 0 8px rgba(255, 120, 190, .9)); }
+.kar-line.title { font: 400 clamp(2rem, 7vw, 2.8rem)/1.2 var(--script); color: #fff; text-shadow: 0 0 18px rgba(255, 90, 170, .8); }
+.kar-line.pop { animation: karPop .45s ease; }
+@keyframes karPop { from { opacity: 0; transform: translateY(8px); } }
+.kar-next { margin: 0; min-height: 1.3em; font: 600 clamp(.85rem, 3vw, 1rem)/1.3 var(--sans); color: rgba(255, 220, 240, .45); }
+body.overlay-open #karaoke { opacity: 0 !important; pointer-events: none; }
+
+#testBadge { position: fixed; top: calc(var(--safe-t) + 8px); left: calc(var(--safe-l) + 8px); z-index: 95; margin: 0; padding: 5px 10px; border-radius: 8px; background: rgba(255, 207, 115, .9); color: #2b1800; font: 700 .62rem var(--sans); letter-spacing: .04em; pointer-events: none; }
+
+/* ---------- song page & eye test ---------- */
+.song-lyrics { display: grid; gap: 14px; }
+.song-block small { font: 700 .62rem var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--rose); }
+.song-block p { margin: 2px 0; font: italic 500 1.15rem/1.45 var(--serif); color: #fbe6f1; }
+.eye-chart { background: #fbfaf7; color: #111; border-radius: 16px; padding: 18px 14px; display: grid; gap: 6px; box-shadow: inset 0 0 0 6px #e9e6df, 0 10px 40px -10px rgba(0, 0, 0, .6); overflow: hidden; }
+.eye-row { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 8px; }
+.eye-v { font: 600 .62rem var(--sans); color: #8a8a8a; text-align: right; }
+.eye-t { font-family: "Manrope", Arial, sans-serif; font-weight: 800; letter-spacing: .12em; text-align: center; line-height: 1.15; overflow-wrap: anywhere; }
+.eye-result { padding: 16px 18px; border-radius: 18px; background: rgba(143, 208, 255, .1); border: 1px solid rgba(143, 208, 255, .35); animation: panelIn .6s ease both; }
+.eye-result h3 { margin: 0 0 6px; font: 600 1.4rem var(--serif); color: #fff; }
+.eye-result p { margin: 4px 0; color: var(--blush); line-height: 1.5; }
+.eye-result b { color: #bfe2ff; }

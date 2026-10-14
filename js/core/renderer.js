@@ -76,7 +76,8 @@ export function createRenderer(canvas, quality) {
   const composer = new EffectComposer(renderer);
   composer.setPixelRatio(quality.dpr);
   composer.setSize(window.innerWidth, window.innerHeight);
-  composer.addPass(new RenderPass(scene, camera));
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
 
   const lens = new ShaderPass(LensShader);
   composer.addPass(lens);
@@ -124,6 +125,8 @@ export function createRenderer(canvas, quality) {
     updateLens,
     render(time) { film.uniforms.uTime.value = time; composer.render(); },
     setPixelRatio(v) { dpr = v; resize(); },
+    /** render a different scene (the fairy-tale sky during the intro) */
+    setScene(s) { renderPass.scene = s; },
     get pixelRatio() { return dpr; },
     setBloomScale(v) { bloomScale = v; composer.setSize(window.innerWidth, window.innerHeight); }
   };

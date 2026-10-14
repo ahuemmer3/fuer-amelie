@@ -208,7 +208,7 @@ export class Journey {
     if (!el || !this.lines[i]) return;
     el.classList.remove('in'); void el.offsetWidth;
     el.textContent = this.lines[i];
-    el.classList.toggle('big', i === 2);
+    el.classList.toggle('big', this.lines[i].includes('&'));
     el.classList.add('in');
   }
 
@@ -228,7 +228,7 @@ export class Journey {
     let event = null;
 
     // captions, spread over the flight
-    const times = [.7, 2.7, 4.8, 6.6, 8.3];
+    const times = [.6, 2.6, 4.7, 6.4, 8.0];
     for (let i = 0; i < times.length; i++) if (t >= times[i] && this.captionAt < i) { this.captionAt = i; this.caption(i); }
 
     // camera on its path, looking at the beam
