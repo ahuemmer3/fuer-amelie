@@ -45,6 +45,8 @@ class AudioEngine {
     if (this.ctx) return;
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
+    // iPhone: play sound even when the silent switch is on (Safari 17+)
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { /* older iOS */ }
     const ctx = this.ctx = new AC();
     ctx.resume();
     this.volume = volume;
