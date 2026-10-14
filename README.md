@@ -1,5 +1,7 @@
 # Galaxie der Liebe ♥
 
+**Live:** <https://ahuemmer3.github.io/fuer-amelie/>
+
 Eine interaktive 3D-Webseite als Geschenk: Startkarte, Warp-Flug, eine Galaxie mit
 schwarzem Loch und Partikelherz, kreisende Fotos, 11 Spiele, Überraschungen und ein
 finaler Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
@@ -119,8 +121,8 @@ git push
 
 ### Hübsche Link-Vorschau (WhatsApp, iMessage)
 
-WhatsApp braucht für das Vorschaubild eine **vollständige Adresse**. Ersetze nach dem
-Veröffentlichen in `index.html` diese Zeile:
+Ist bereits auf `https://ahuemmer3.github.io/fuer-amelie/` eingestellt. Falls du das Repo umbenennst oder für eine andere
+Adresse nutzt: WhatsApp braucht für das Vorschaubild eine **vollständige Adresse**. Ersetze in `index.html` diese Zeile:
 
 ```html
 <meta property="og:image" content="./assets/og-image.jpg">

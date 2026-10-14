@@ -12,16 +12,16 @@
 export const CONFIG = {
 
   /* ---------- Namen ---------- */
-  ihrName: '',                       // Ihr Vorname, z. B. 'Lena'. Leer lassen = Texte ohne Namen
+  ihrName: 'Amelie',                 // Ihr Vorname
   deinName: 'Aaron',                 // Dein Name (Unterschrift)
-  initialen: ['A', ''],              // Für das Sternbild-Spiel, z. B. ['A', 'L']. Zweites Feld leer = Unendlich-Zeichen
+  initialen: ['A', 'A'],             // Für das Sternbild-Spiel (Aaron + Amelie). Zweites Feld leer = Unendlich-Zeichen
 
   /* ---------- Datum ---------- */
   zusammenSeit: '',                  // WICHTIG: euer Startdatum als 'JJJJ-MM-TT', z. B. '2025-06-14'
 
   /* ---------- Startkarte ---------- */
   karte: {
-    titel: 'Für dich',
+    titel: 'Für Amelie',
     untertitel: 'Eine kleine Galaxie, nur für uns zwei.',
     datum: '',                       // leer = heutiges Datum, sonst z. B. '14. Oktober 2026'
     button: 'Öffnen'
