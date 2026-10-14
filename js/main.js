@@ -549,7 +549,7 @@ function frame() {
 
   o.starfield.update(t);
   o.galaxy.update(t, audio);
-  o.blackHole.update(t, beat * .5 + audio);
+  o.blackHole.update(t, beat * .45 + audio * .5);
   o.heart.update(t, dt, audio);
   o.rings.update(t);
   o.photos.update(t, dt, camera);

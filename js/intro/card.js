@@ -23,7 +23,7 @@ export class CardDissolve {
     g.scale(s, s);
     const r = 28;
     // card body
-    g.fillStyle = 'rgba(255,200,230,.35)';
+    g.fillStyle = 'rgba(160,60,140,.6)';
     g.beginPath(); g.roundRect ? g.roundRect(0, 0, rect.width, rect.height, r) : g.rect(0, 0, rect.width, rect.height); g.fill();
     g.strokeStyle = '#ffd3e7'; g.lineWidth = 3; g.stroke();
     // text + button, using the real element positions
@@ -40,8 +40,11 @@ export class CardDissolve {
       const i = (y * cw + x) * 4, a = data[i + 3];
       if (a < 40) continue;
       const bright = (data[i] + data[i + 1] + data[i + 2]) / 765;
-      if (Math.random() > (bright > .85 ? .9 : .32)) continue;
-      samples.push([x / s, y / s, data[i] / 255, data[i + 1] / 255, data[i + 2] / 255]);
+      const isText = bright > .8 || (data[i] > 240 && data[i + 1] < 160);
+      if (Math.random() > (isText ? .9 : .13)) continue;
+      // glass body becomes pink glitter, text keeps its colour
+      const col = isText ? [data[i] / 255, data[i + 1] / 255, data[i + 2] / 255] : (Math.random() < .5 ? [1, .42, .72] : [.85, .55, 1]);
+      samples.push([x / s, y / s, ...col]);
     }
     // keep within budget
     while (samples.length > this.maxCount) samples.splice(Math.floor(Math.random() * samples.length), 1);

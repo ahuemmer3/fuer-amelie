@@ -77,9 +77,9 @@ export class Heart {
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mv;
           float tw = 0.75 + 0.25 * sin(uTime * 3.0 + aSeed * 50.0);
-          gl_PointSize = clamp(aSize * uSize * uPixelRatio * (1.0 + uAudio * 0.5) * (0.9 + e * 0.4) / -mv.z, 1.0, 48.0);
+          gl_PointSize = clamp(aSize * uSize * uPixelRatio * (1.0 + uAudio * 0.18) * (0.9 + e * 0.4) / -mv.z, 1.0, 48.0);
           vec3 gold = vec3(1.0, 0.78, 0.38) * (0.75 + 0.5 * fract(aSeed * 13.7));
-          vColor = mix(aColor, gold, uGold) * (1.25 + uAudio * 0.4);
+          vColor = mix(aColor, gold, uGold) * (1.2 + uAudio * 0.2);
           vAlpha = uOpacity * tw * (1.0 - e * 0.25);
         }`,
       fragmentShader: /* glsl */`
@@ -160,7 +160,7 @@ export class Heart {
     const u = this.material.uniforms;
     u.uTime.value = t; u.uAudio.value = audio;
     this.streamMat.uniforms.uTime.value = t;
-    u.uBeat.value = 1 + heartBeat(t) * .07 + audio * .05;
+    u.uBeat.value = 1 + heartBeat(t) * .07 + audio * .03;
     this.group.rotation.y = Math.sin(t * .25) * .5;
     this.group.position.y = this.y + Math.sin(t * .8) * .12;
 

@@ -155,8 +155,12 @@ class AudioEngine {
     if (!this.analyser || !this.musicOn) { this.lvl *= .95; return this.lvl; }
     this.analyser.getByteFrequencyData(this.bins);
     let s = 0; for (let i = 1; i < 12; i++) s += this.bins[i];
-    const v = Math.min(1, s / (11 * 255) * 1.4);
-    this.lvl += (v - this.lvl) * .15;
+    const v = s / (11 * 255);
+    this.fast = (this.fast || 0) + (v - (this.fast || 0)) * .35;
+    this.slow = (this.slow || 0) + (v - (this.slow || 0)) * .02;
+    // mostly the "punch" above the running average, plus a little of the overall level
+    const target = Math.min(1, Math.max(0, (this.fast - this.slow) * 3) + this.fast * .2);
+    this.lvl += (target - this.lvl) * .25;
     return this.lvl;
   }
 

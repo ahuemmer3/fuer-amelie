@@ -187,7 +187,7 @@ body.overlay-open #hud, body.overlay-open #mapBtn, body.overlay-open #title, bod
 @keyframes shake { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
 
 /* memory */
-.mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(6px, 1.6vw, 12px); }
+.mem-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(6px, 1.6vw, 12px); width: 100%; max-width: min(100%, calc(100dvh - 330px), 560px); margin: 0 auto; }
 .mem-card { position: relative; aspect-ratio: 1; border: 0; padding: 0; background: transparent; cursor: pointer; perspective: 800px; border-radius: 16px; }
 .mem-in { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.3, .8, .3, 1.1); }
 .mem-card.open .mem-in, .mem-card.matched .mem-in { transform: rotateY(180deg); }
@@ -236,7 +236,7 @@ body.overlay-open #hud, body.overlay-open #mapBtn, body.overlay-open #title, bod
 .puz-ref { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; border: 1px solid var(--line); }
 
 /* hidden heart */
-.hh-grid { display: grid; gap: 2px; padding: 8px; border-radius: 18px; background: rgba(0, 0, 0, .3); border: 1px solid var(--line); }
+.hh-grid { display: grid; gap: 2px; padding: 8px; width: 100%; max-width: min(100%, calc(100dvh - 330px), 560px); margin: 0 auto; border-radius: 18px; background: rgba(0, 0, 0, .3); border: 1px solid var(--line); }
 .hh-grid button { aspect-ratio: 1; border: 0; padding: 0; background: transparent; cursor: pointer; font-size: clamp(.9rem, 4.2vw, 1.5rem); line-height: 1; border-radius: 8px; transition: transform .15s, background .2s; }
 .hh-grid button:hover { background: rgba(255, 255, 255, .06); }
 .hh-grid button.miss { animation: shake .4s ease; opacity: .35; }
@@ -321,3 +321,4 @@ body.overlay-open #hud, body.overlay-open #mapBtn, body.overlay-open #title, bod
   .plabel .ic { font-size: .78rem; }
   #toasts { top: calc(var(--safe-t) + 84px); }
 }
+body.overlay-open #toasts { top: auto; bottom: calc(var(--safe-b) + 14px); }

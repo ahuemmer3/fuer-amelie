@@ -92,7 +92,7 @@ export class Galaxy {
           gl_Position = projectionMatrix * mv;
           float seed = aParams.w;
           float tw = 0.72 + 0.28 * sin(uTime * (1.2 + fract(seed * 7.31) * 3.0) + seed * 90.0);
-          float pulse = 1.0 + uAudio * 0.35 * smoothstep(9.0, 0.0, r);
+          float pulse = 1.0 + uAudio * 0.2 * smoothstep(9.0, 0.0, r);
           gl_PointSize = clamp(aSize * uSize * uPixelRatio * tw * pulse / -mv.z, 1.0, 64.0);
           vColor = aColor;
           vAlpha = uOpacity * (0.4 + 0.35 * tw) * smoothstep(1.3, 3.4, r) * (0.55 + 0.45 * smoothstep(2.0, 7.0, r));
