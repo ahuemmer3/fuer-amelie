@@ -85,8 +85,9 @@ const scenarios = {
         await at(14.6, '07-warp'); await at(17.6, '08-journey'); await at(20.9, '09-arrive');
         await waitPhase(page, 'main'); await page.waitForTimeout(700); await shot('10-party');
         await page.waitForTimeout(5000); await shot('11-happy-birthday');
-        await page.waitForFunction(() => (document.querySelector('.kar-title') || {}).textContent === '»Amelie«', null, { timeout: 40000 });
-        await page.waitForTimeout(15000); await shot('12-song');
+        await page.waitForFunction(() => ['»Amelie«', 'Alles Gute, Amelie'].includes((document.querySelector('.kar-title') || {}).textContent), null, { timeout: 40000 });
+        await page.waitForTimeout(2500); await shot('12-song');
+        console.log('  Song-Titel: ' + await page.$eval('.kar-title', e => e.textContent));
         const playing = await page.evaluate(() => !document.getElementById('karaoke').hidden);
         console.log(`  Karaoke sichtbar: ${playing ? 'ja' : 'nein'}`);
       });

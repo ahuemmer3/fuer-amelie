@@ -17,14 +17,17 @@ export default function render(body, api) {
     last = l;
   });
 
-  const play = h('button', { class: 'g-btn primary', type: 'button', text: '▶ Song abspielen (mit Karaoke)' });
+  const play = h('button', { class: 'g-btn primary', type: 'button', text: '▶ »Amelie« (mit Karaoke)' });
   const hb = h('button', { class: 'g-btn', type: 'button', text: '🎂 Happy Birthday' });
+  const suno = api.sunoSong();
+  const real = suno ? h('button', { class: 'g-btn gold', type: 'button', text: `🎶 ${suno.titel || 'Dein Song'}` }) : null;
+  if (real) real.addEventListener('click', () => api.playSong('suno'));
   play.addEventListener('click', () => api.playSong('song'));
   hb.addEventListener('click', () => api.playSong('hb'));
 
   body.append(h('div', { class: 'g song-page' }, [
     h('p', { class: 'g-lead', text: 'Ein eigener Song, nur für dich. Text und Musik von Aaron (mit ein bisschen Hilfe aus dem Universum). Zum Mitsingen, Mitjammern und Mitessen.' }),
-    h('div', { class: 'g-row' }, [play, hb]),
+    h('div', { class: 'g-row' }, [real, play, hb]),
     h('div', { class: 'song-lyrics' }, blocks.map(b => h('div', { class: 'song-block' }, [h('small', { text: b.name }), ...b.lines.map(t => h('p', { text: t }))])))
   ]));
 }

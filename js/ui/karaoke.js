@@ -29,7 +29,12 @@ export class Karaoke {
     this.cur = i;
     this.lineEl.textContent = '';
     this.spans = [];
-    if (i < 0) { this.lineEl.innerHTML = ''; this.lineEl.classList.add('title'); this.lineEl.textContent = '♪ ' + this.titleEl.textContent + ' ♪'; this.nextEl.textContent = this.lines[0] ? text(this.lines[0]) : ''; return; }
+    if (i < 0) {
+      this.lineEl.innerHTML = ''; this.lineEl.classList.add('title'); this.lineEl.textContent = '♪ ' + this.titleEl.textContent + ' ♪';
+      this.nextEl.innerHTML = this.lines[0] ? '' : '<span class="kar-eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>';
+      if (this.lines[0]) this.nextEl.textContent = text(this.lines[0]);
+      return;
+    }
     this.lineEl.classList.remove('title');
     const line = this.lines[i];
     line.syl.forEach((s, k) => {

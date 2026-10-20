@@ -78,6 +78,15 @@ export const CONFIG = {
     lautstaerke: 0.7
   },
 
+  /* ---------- Dein eigener Geburtstags-Song (z. B. von Suno) ----------
+     MP3 in assets/music/ ablegen und hier eintragen. Er läuft dann direkt nach dem „Überraschung!“.
+     Leer = stattdessen Happy Birthday + der eingebaute Song „Amelie“. */
+  geburtstagsSong: {
+    datei: '',                       // z. B. './assets/music/alles-gute-amelie.mp3'
+    titel: 'Alles Gute, Amelie',
+    untertitel: 'Ein Song für dich · von Aaron'
+  },
+
   /* ---------- Textringe, die mit der Galaxie kreisen (innen → außen) ---------- */
   botschaften: [
     ['Happy Birthday, Amelie', 'Seit dem Sandkasten', 'Mein Lieblingsmensch', 'Für immer wir'],

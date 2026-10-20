@@ -272,6 +272,7 @@ class AudioEngine {
   stopSeq(fade = true) {
     const s = this.seq;
     if (!s) return;
+    if (s.src) { try { s.src.stop(this.ctx.currentTime + (fade ? .6 : 0)); } catch (e) { /* not started */ } }
     clearInterval(s.timer); this.seq = null;
     if (fade && this.ctx) {
       const now = this.ctx.currentTime, g = this.song.gain;
@@ -283,6 +284,30 @@ class AudioEngine {
   /** schedules a short piece completely right now (intro music) */
   playNow(seq) { if (!this.ctx) return; const t0 = this.ctx.currentTime + .05; seq.events.forEach(e => { try { e.fn(t0 + e.t); } catch (err) { console.error(err); } }); }
   seqPlaying() { return !!this.seq; }
+
+  /** fetch + decode a song file in the background (started from the "Öffnen" tap) */
+  loadSong(url) {
+    if (!this.ctx || !url) return Promise.resolve(null);
+    if (!this.songBuffers) this.songBuffers = {};
+    if (!this.songBuffers[url]) {
+      this.songBuffers[url] = fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+        .then(b => new Promise((res, rej) => this.ctx.decodeAudioData(b, res, rej)))
+        .catch(err => { console.warn('Song konnte nicht geladen werden: ' + url); return null; });
+    }
+    return this.songBuffers[url];
+  }
+
+  /** plays a decoded song file like a sequence (karaoke time, stop button, ambient pause) */
+  async playSongFile(url, { onEnd } = {}) {
+    const buf = await this.loadSong(url);
+    if (!buf) return false;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf; src.connect(this.song);
+    const seq = { events: [{ t: 0, fn: at => src.start(at) }], duration: buf.duration + .3 };
+    this.playSeq(seq, { onEnd });
+    const s = this.seq; s.src = src;
+    return true;
+  }
 
   /** wind noise while flying through the clouds */
   wind(on) {

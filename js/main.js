@@ -47,6 +47,8 @@ const KICKER = { spiel: 'Spiel', ueberraschung: 'Überraschung', finale: 'Finale
 const EGGS_TOTAL = 5;
 const PLANET_TEXTURES = ['earth.webp', 'earth-night.webp', 'earth-clouds.webp', 'moon.webp', 'mars.webp', 'jupiter.webp', 'saturn.webp', 'saturn-ring.webp', 'milkyway.webp', 'neptune.webp', 'venus.webp', 'uranus.webp', 'mercury.webp'];
 const planetTextures = {};
+const SONG = CONFIG.geburtstagsSong || {};
+const SONG_FILE = SONG.datei || '';
 
 /* ------------------------------------------------------------------ setup */
 const params = new URLSearchParams(location.search);
@@ -235,6 +237,7 @@ function makeApi(def) {
     heartRain: () => objects.floaters.rain(70),
     epic: on => Sound.setEpic(on),
     songLyrics: () => buildSong(Sound).lyrics,
+    sunoSong: () => (SONG_FILE ? SONG : null),
     playSong: which => { Sound.ensureStarted({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke }); overlay.close(); setTimeout(() => playKaraoke(which, () => Sound.releaseAmbient()), 420); },
     birthdaySong: () => Sound.happyBirthday(),
     eggCount: () => Progress.eggs().length,
@@ -555,6 +558,7 @@ const BLOOM = { strength: R.bloom.strength, threshold: R.bloom.threshold, exposu
 function startIntro() {
   phase = 'intro'; introT = 0;
   Sound.start({ file: CONFIG.musik.datei, volume: CONFIG.musik.lautstaerke, holdAmbient: Infinity });
+  if (SONG_FILE) Sound.loadSong(SONG_FILE);
   enableTilt();
   Sound.play('open');
   dissolve = new CardDissolve({ camera, pixelRatio: R.pixelRatio, maxCount: Q.tier === 'low' ? 7000 : 13000 });
@@ -643,12 +647,22 @@ function surpriseParty() {
   objects.floaters.rain(70);
   setTimeout(() => { el.hidden = true; }, 3000);
   // Happy Birthday, then the song
-  setTimeout(() => { if (Sound.ctx) playKaraoke('hb', () => setTimeout(() => playKaraoke('song', () => Sound.releaseAmbient()), 700)); }, 2800);
+  setTimeout(() => {
+    if (!Sound.ctx) return;
+    if (SONG_FILE) playKaraoke('suno', () => Sound.releaseAmbient());
+    else playKaraoke('hb', () => setTimeout(() => playKaraoke('song', () => Sound.releaseAmbient()), 700));
+  }, 2800);
 }
 
 const karaoke = new Karaoke({ root: $('karaoke'), onStop: () => { Sound.stopSeq(); Sound.releaseAmbient(); } });
-function playKaraoke(which, onEnd) {
+async function playKaraoke(which, onEnd) {
   if (!Sound.ctx) return;
+  if (which === 'suno') {
+    const ok = await Sound.playSongFile(SONG_FILE, { onEnd: () => { karaoke.hide(); onEnd && onEnd(); } });
+    if (!ok) { playKaraoke('hb', () => playKaraoke('song', onEnd)); return; }
+    karaoke.play({ title: SONG.titel || 'Dein Song', sub: SONG.untertitel || `Ein Song für dich · von ${CONFIG.deinName}`, lines: [], time: () => Sound.seqTime() });
+    return;
+  }
   const hb = which === 'hb';
   const seq = hb ? buildHappyBirthday(Sound) : buildSong(Sound);
   Sound.playSeq(seq, { onEnd: () => { karaoke.hide(); onEnd && onEnd(); } });
