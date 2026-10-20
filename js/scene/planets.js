@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /** Glowing planets that open games and surprises. Done = golden, locked = dim. */
 export class Planets {
-  constructor({ defs, labelRoot, onSelect }) {
+  constructor({ defs, labelRoot, onSelect, textures = {} }) {
     this.group = new THREE.Group();
     this.list = [];
     this.labelRoot = labelRoot;
@@ -10,17 +10,21 @@ export class Planets {
     this.visible = 0;
     this.labelsOn = false;
 
-    const sphere = new THREE.SphereGeometry(.62, 40, 28);
+    const sphere = new THREE.SphereGeometry(.78, 64, 48);
     const hitGeo = new THREE.SphereGeometry(1.5, 10, 8);
     const glowTex = this.glowTexture();
-    const ringGeo = new THREE.RingGeometry(.85, 1.25, 64, 1);
+    const ringGeo = new THREE.RingGeometry(1.0, 1.75, 96, 1);
+    { const pos = ringGeo.attributes.position, uv = ringGeo.attributes.uv, v = new THREE.Vector3(); for (let k = 0; k < pos.count; k++) { v.fromBufferAttribute(pos, k); uv.setXY(k, (v.length() - 1) / .75, .5); } }
     const orbitDefs = defs.filter(d => d.kind !== 'finale');
 
     defs.forEach(def => {
       const g = new THREE.Group();
-      const c1 = new THREE.Color(def.color), c2 = new THREE.Color(def.color).offsetHSL(.06, -.1, .18);
+      const map = textures[def.tex] || null;
       const mat = new THREE.ShaderMaterial({
-        uniforms: { uC1: { value: c1 }, uC2: { value: c2 }, uTime: { value: 0 }, uGold: { value: 0 }, uLocked: { value: 0 }, uHover: { value: 0 }, uOpacity: { value: 0 }, uSeed: { value: Math.random() * 10 } },
+        uniforms: {
+          uMap: { value: map }, uHasMap: { value: map ? 1 : 0 }, uTint: { value: new THREE.Color(def.tint || '#ffffff') }, uRim: { value: new THREE.Color(def.color) },
+          uTime: { value: 0 }, uGold: { value: 0 }, uLocked: { value: 0 }, uHover: { value: 0 }, uOpacity: { value: 0 }
+        },
         vertexShader: /* glsl */`
           varying vec3 vN; varying vec3 vW; varying vec2 vUv;
           void main() {
@@ -29,20 +33,22 @@ export class Planets {
             gl_Position = projectionMatrix * viewMatrix * w;
           }`,
         fragmentShader: /* glsl */`
-          uniform vec3 uC1, uC2; uniform float uTime, uGold, uLocked, uHover, uOpacity, uSeed;
+          uniform sampler2D uMap; uniform float uHasMap, uTime, uGold, uLocked, uHover, uOpacity; uniform vec3 uTint, uRim;
           varying vec3 vN; varying vec3 vW; varying vec2 vUv;
           void main() {
-            vec3 V = normalize(cameraPosition - vW);
-            vec3 N = normalize(vN);
-            float fr = pow(1.0 - max(dot(N, V), 0.0), 2.2);
-            float bands = 0.5 + 0.5 * sin(vUv.y * 16.0 + uSeed + sin(vUv.x * 12.566 + uTime * 0.6 + uSeed) * 1.4);
-            vec3 base = mix(uC1, uC2, bands);
-            vec3 gold = mix(vec3(1.0, 0.68, 0.25), vec3(1.0, 0.93, 0.62), bands);
+            vec3 V = normalize(cameraPosition - vW), N = normalize(vN);
+            vec3 L = normalize(vec3(0.0, 3.0, 0.0) - vW);              // lit by the galaxy core
+            float ndl = dot(N, L);
+            vec3 tex = uHasMap > 0.5 ? texture2D(uMap, vUv).rgb : vec3(0.8);
+            vec3 base = tex * uTint;
+            float lum = dot(tex, vec3(0.3, 0.55, 0.15));
+            vec3 gold = vec3(1.0, 0.72, 0.3) * (0.45 + lum * 1.1);
             base = mix(base, gold, uGold);
-            float light = 0.45 + 0.55 * max(dot(N, normalize(vec3(0.0, 0.0, 0.0) - vW + vec3(0.0, 3.0, 0.0))), 0.0);
-            vec3 rimCol = mix(uC2 * 1.4, vec3(1.0, 0.85, 0.5), uGold);
-            vec3 col = base * light + rimCol * fr * (1.4 + uHover * 2.0);
-            col *= mix(1.0, 0.28, uLocked);
+            float diff = 0.16 + 0.95 * max(ndl, 0.0);
+            float fr = pow(1.0 - max(dot(N, V), 0.0), 2.6);
+            vec3 rimCol = mix(uRim, vec3(1.0, 0.82, 0.45), uGold);
+            vec3 col = base * diff + rimCol * fr * (0.9 + uHover * 1.8) * (0.4 + 0.6 * smoothstep(-0.4, 0.5, ndl));
+            col *= mix(1.0, 0.3, uLocked);
             gl_FragColor = vec4(col, uOpacity);
           }`,
         transparent: true
@@ -56,7 +62,7 @@ export class Planets {
 
       let ring = null;
       if (def.ring) {
-        ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
+        ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ map: textures['saturn-ring.webp'] || null, color: textures['saturn-ring.webp'] ? '#ffffff' : def.color, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
         ring.rotation.x = -Math.PI / 2 + .45;
         g.add(ring);
       }
@@ -115,7 +121,7 @@ export class Planets {
     const v = new THREE.Vector3();
     for (const p of this.list) {
       p.group.position.y = p.base.y + Math.sin(t * .9 + p.bob) * .25;
-      p.mesh.rotation.y = t * .3 + p.bob;
+      p.mesh.rotation.y = t * .15 + p.bob;
       if (p.ring) p.ring.rotation.z = t * .2;
       p.gold += ((p.targetGold || 0) - p.gold) * Math.min(1, dt * 3);
       p.locked += ((p.targetLocked || 0) - p.locked) * Math.min(1, dt * 3);
@@ -123,9 +129,9 @@ export class Planets {
       const u = p.mat.uniforms;
       u.uTime.value = t; u.uGold.value = p.gold; u.uLocked.value = p.locked; u.uHover.value = p.hover; u.uOpacity.value = this.visible;
       const pulse = .85 + .15 * Math.sin(t * 2 + p.bob);
-      p.glow.material.opacity = this.visible * (.45 + p.gold * .4 + p.hover * .4) * (1 - p.locked * .75) * pulse;
+      p.glow.material.opacity = this.visible * (.16 + p.gold * .35 + p.hover * .35) * (1 - p.locked * .75) * pulse;
       p.glow.material.color.set(p.gold > .5 ? '#ffc861' : p.def.color);
-      if (p.ring) p.ring.material.opacity = this.visible * .35 * (1 - p.locked * .6);
+      if (p.ring) p.ring.material.opacity = this.visible * .9 * (1 - p.locked * .6);
       const s = 1 + p.hover * .2 + (p.def.kind === 'finale' ? .1 + (1 - p.locked) * .45 : 0);
       p.group.scale.setScalar(s);
 

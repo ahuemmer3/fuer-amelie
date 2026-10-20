@@ -11,7 +11,7 @@ const NOISE = /* glsl */`
 `;
 
 export class BlackHole {
-  constructor({ radius = 1, colors }) {
+  constructor({ radius = 1, colors, steps = 0 }) {
     this.radius = radius;
     this.group = new THREE.Group();
 
@@ -106,13 +106,86 @@ export class BlackHole {
     // invisible, larger target for long-press detection
     this.hit = new THREE.Mesh(new THREE.SphereGeometry(radius * 2.2, 12, 8), new THREE.MeshBasicMaterial({ visible: false }));
     this.group.add(this.hit);
+
+    // "Gargantua": ray-marched light bending around the hole (Schwarzschild photon paths)
+    this.gargantua = null;
+    if (steps > 0) {
+      const rs = radius * .58, bound = rs * 6.8;
+      this.gMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTime: { value: 0 }, uPulse: { value: 0 }, uOpacity: { value: 0 }, uInv: { value: new THREE.Matrix4() },
+          uRs: { value: rs }, uBound: { value: 6.8 }, uIn: { value: 2.3 }, uOut: { value: 6.4 },
+          uHot: { value: new THREE.Color('#fff2f6') }, uMid: { value: new THREE.Color(colors.herz2) }, uOuter: { value: new THREE.Color(colors.galaxieAussen) }
+        },
+        vertexShader: /* glsl */`varying vec3 vW; void main() { vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+        fragmentShader: /* glsl */`
+          uniform float uTime, uPulse, uOpacity, uRs, uBound, uIn, uOut; uniform mat4 uInv; uniform vec3 uHot, uMid, uOuter;
+          varying vec3 vW;
+          ${NOISE}
+          void main() {
+            // ray in the black hole's local frame, in units of the horizon radius
+            vec3 ro = (uInv * vec4(cameraPosition, 1.0)).xyz / uRs;
+            vec3 rd = normalize((uInv * vec4(vW, 1.0)).xyz / uRs - ro);
+            float b = dot(ro, rd), c = dot(ro, ro) - uBound * uBound, disc = b * b - c;
+            if (disc < 0.0) discard;
+            vec3 p = ro + rd * max(-b - sqrt(disc), 0.0), v = rd;
+            float h2 = dot(cross(p, v), cross(p, v));
+            vec3 col = vec3(0.0); float alpha = 0.0;
+            for (int i = 0; i < ${steps}; i++) {
+              float r2 = dot(p, p), r = sqrt(r2);
+              if (r < 1.0) { alpha = 1.0; break; }
+              float dt = clamp(0.09 * r, 0.025, 0.45);
+              vec3 prev = p;
+              v += -1.5 * h2 * p / (r2 * r2 * r) * dt;
+              p += v * dt;
+              if (prev.y * p.y < 0.0) {
+                vec3 q = mix(prev, p, prev.y / (prev.y - p.y));
+                float rq = length(q.xz);
+                if (rq > uIn && rq < uOut) {
+                  float t = (rq - uIn) / (uOut - uIn);
+                  float ang = atan(q.z, q.x) + uTime * (0.9 / (0.4 + t)) - t * 2.5;
+                  float n = fbm(vec2(cos(ang), sin(ang)) * (1.6 + t * 4.0) + vec2(t * 3.0, uTime * 0.05));
+                  float dens = smoothstep(0.0, 0.05, t) * pow(1.0 - t, 1.6) * (0.45 + 1.0 * smoothstep(0.25, 0.85, n));
+                  vec3 vel = normalize(vec3(-q.z, 0.0, q.x));
+                  float dop = clamp(1.0 + 0.75 * dot(vel, -normalize(v)), 0.25, 2.2);
+                  vec3 dc = mix(uHot, uMid, smoothstep(0.0, 0.4, t));
+                  dc = mix(dc, uOuter, smoothstep(0.4, 1.0, t)) * dens * dop * (1.05 + uPulse * 0.5);
+                  float a = clamp(dens * 1.1, 0.0, 1.0);
+                  col += dc * (1.0 - alpha); alpha += a * (1.0 - alpha);
+                  if (alpha > 0.97) break;
+                }
+              }
+              if (r > uBound + 0.02 && dot(p, v) > 0.0) break;
+            }
+            // thin photon ring where rays graze the photon sphere
+            float bImpact = sqrt(h2);
+            col += uHot * exp(-pow((bImpact - 2.6) / 0.05, 2.0)) * 0.6 * (1.0 - alpha);
+            gl_FragColor = vec4(col * uOpacity, alpha * uOpacity);
+          }`,
+        transparent: true, depthWrite: false,
+        blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneMinusSrcAlphaFactor
+      });
+      this.gargantua = new THREE.Mesh(new THREE.SphereGeometry(bound, 48, 32), this.gMat);
+      this.gargantua.renderOrder = 6;
+      this.group.add(this.gargantua);
+      this.disk.visible = false; this.halo.visible = false; this.horizon.visible = false;
+    }
   }
 
-  setOpacity(o) { this.diskMat.uniforms.uOpacity.value = o; this.haloMat.uniforms.uOpacity.value = o; }
+  setOpacity(o) {
+    this.diskMat.uniforms.uOpacity.value = o; this.haloMat.uniforms.uOpacity.value = o;
+    if (this.gMat) this.gMat.uniforms.uOpacity.value = o;
+  }
   update(t, pulse) {
     this.diskMat.uniforms.uTime.value = t;
     this.diskMat.uniforms.uPulse.value = pulse;
     this.haloMat.uniforms.uTime.value = t;
     this.haloMat.uniforms.uPulse.value = pulse;
+    if (this.gMat) {
+      this.gMat.uniforms.uTime.value = t;
+      this.gMat.uniforms.uPulse.value = pulse;
+      this.group.updateMatrixWorld();
+      this.gMat.uniforms.uInv.value.copy(this.group.matrixWorld).invert();
+    }
   }
 }

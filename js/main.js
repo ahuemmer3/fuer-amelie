@@ -20,37 +20,33 @@ import { WishStars } from './scene/wishstars.js';
 import { CardDissolve } from './intro/card.js';
 import { Warp } from './intro/warp.js';
 import { Journey } from './intro/journey.js';
-import { SkyFlight } from './intro/sky.js';
+import { Odyssey } from './intro/odyssey.js';
 import { Karaoke } from './ui/karaoke.js';
-import { buildSong, buildHappyBirthday, buildSkyTheme } from './core/songs.js';
+import { buildSong, buildHappyBirthday, buildOdysseyTheme } from './core/songs.js';
 import { Overlay } from './ui/overlay.js';
 import { PhotoCard } from './ui/photo-card.js';
 import { toast, confetti } from './ui/feedback.js';
 
 /* ------------------------------------------------------------------ planets */
 const PLANETS = [
-  { id: 'fangen', title: 'Herzen fangen', icon: '💗', color: '#ff4fa3', kind: 'spiel', module: './games/catch.js' },
-  { id: 'torte', title: 'Geburtstagstorte', icon: '🎂', color: '#ffb3d4', kind: 'ueberraschung', module: './pages/cake.js', ring: true },
-  { id: 'memory', title: 'Foto-Memory', icon: '🃏', color: '#ff8fc7', kind: 'spiel', module: './games/memory.js', ring: true },
-  { id: 'quiz', title: 'Unser Quiz', icon: '💭', color: '#c77dff', kind: 'spiel', module: './games/quiz.js' },
-  { id: 'sternbild', title: 'Sternbild', icon: '✨', color: '#8fb8ff', kind: 'spiel', module: './games/constellation.js' },
-  { id: 'zeit', title: 'Unsere Zeit', icon: '⏳', color: '#ffc2dd', kind: 'ueberraschung', module: './pages/counter.js' },
-  { id: 'rubbellos', title: 'Rubbellos', icon: '🎟️', color: '#ff9a6b', kind: 'spiel', module: './games/scratch.js' },
-  { id: 'gluecksrad', title: 'Glücksrad', icon: '🎡', color: '#ff6b9a', kind: 'spiel', module: './games/wheel.js', ring: true },
-  { id: 'puzzle', title: 'Foto-Puzzle', icon: '🧩', color: '#9b5cff', kind: 'spiel', module: './games/puzzle.js' },
-  { id: 'momente', title: 'Unsere Momente', icon: '📸', color: '#ffa8d5', kind: 'ueberraschung', module: './pages/timeline.js' },
-  { id: 'wunschstern', title: 'Wunschstern', icon: '🌠', color: '#7fd8ff', kind: 'spiel', module: './games/wish.js' },
-  { id: 'herzsuche', title: 'Finde das Herz', icon: '🔍', color: '#ff5f7e', kind: 'spiel', module: './games/hidden-heart.js' },
-  { id: 'gruende', title: 'Gründe', icon: '💌', color: '#ff7ab8', kind: 'ueberraschung', module: './pages/reasons.js', ring: true },
-  { id: 'song', title: 'Dein Song', icon: '🎤', color: '#ff5fa8', kind: 'ueberraschung', module: './pages/song.js' },
-  { id: 'sehtest', title: 'Sehtest', icon: '👓', color: '#8fd0ff', kind: 'ueberraschung', module: './pages/eyetest.js' },
-  { id: 'geheimfach', title: 'Geheimfach', icon: '🔐', color: '#b38cff', kind: 'spiel', module: './games/secret.js' },
-  { id: 'umlaufbahn', title: 'Umlaufbahn', icon: '🪐', color: '#ff9ed2', kind: 'spiel', module: './games/orbit.js', ring: true },
-  { id: 'finale', title: 'Das letzte Geheimnis', icon: '💛', color: '#ffcf73', kind: 'finale', module: './pages/final-letter.js' }
+  { id: 'fangen', title: 'Herzen fangen', icon: '💗', color: '#ff8a5c', tex: 'mars.webp', kind: 'spiel', module: './games/catch.js' },
+  { id: 'torte', title: 'Geburtstagstorte', icon: '🎂', color: '#ffc58f', tex: 'jupiter.webp', kind: 'ueberraschung', module: './pages/cake.js' },
+  { id: 'memory', title: 'Foto-Memory', icon: '🃏', color: '#7fc4ff', tex: 'earth.webp', kind: 'spiel', module: './games/memory.js' },
+  { id: 'zeit', title: 'Unsere Zeit', icon: '⏳', color: '#d9d4e8', tex: 'moon.webp', kind: 'ueberraschung', module: './pages/counter.js' },
+  { id: 'quiz', title: 'Unser Quiz', icon: '💭', color: '#6f8bff', tex: 'neptune.webp', kind: 'spiel', module: './games/quiz.js' },
+  { id: 'song', title: 'Dein Song', icon: '🎤', color: '#ffd9a0', tex: 'saturn.webp', ring: true, kind: 'ueberraschung', module: './pages/song.js' },
+  { id: 'sternbild', title: 'Sternbild', icon: '✨', color: '#9fe8ff', tex: 'uranus.webp', kind: 'spiel', module: './games/constellation.js' },
+  { id: 'momente', title: 'Unsere Momente', icon: '📸', color: '#e8c9b0', tex: 'mercury.webp', kind: 'ueberraschung', module: './pages/timeline.js' },
+  { id: 'rubbellos', title: 'Rubbellos', icon: '🎟️', color: '#ffd27a', tex: 'venus.webp', kind: 'spiel', module: './games/scratch.js' },
+  { id: 'gruende', title: 'Gründe', icon: '💌', color: '#ff7ab8', tex: 'venus.webp', tint: '#ff9fd0', kind: 'ueberraschung', module: './pages/reasons.js' },
+  { id: 'sehtest', title: 'Sehtest', icon: '👓', color: '#8fd0ff', tex: 'neptune.webp', tint: '#a8f0ff', kind: 'ueberraschung', module: './pages/eyetest.js' },
+  { id: 'finale', title: 'Das letzte Geheimnis', icon: '💛', color: '#ffcf73', tex: 'jupiter.webp', tint: '#ffe0a0', kind: 'finale', module: './pages/final-letter.js' }
 ];
 const REQUIRED = PLANETS.filter(p => p.kind === 'spiel').map(p => p.id);
 const KICKER = { spiel: 'Spiel', ueberraschung: 'Überraschung', finale: 'Finale' };
 const EGGS_TOTAL = 5;
+const PLANET_TEXTURES = ['earth.webp', 'earth-night.webp', 'earth-clouds.webp', 'moon.webp', 'mars.webp', 'jupiter.webp', 'saturn.webp', 'saturn-ring.webp', 'milkyway.webp', 'neptune.webp', 'venus.webp', 'uranus.webp', 'mercury.webp'];
+const planetTextures = {};
 
 /* ------------------------------------------------------------------ setup */
 const params = new URLSearchParams(location.search);
@@ -124,13 +120,15 @@ function setProgress(p) {
 async function preload() {
   const photoItems = CONFIG.fotos.slice(0, Q.photos);
   const fonts = ['400 40px "Great Vibes"', 'italic 600 40px "Cormorant Garamond"', '600 16px "Manrope"'];
-  const total = fonts.length + photoItems.length;
+  const total = fonts.length + photoItems.length + PLANET_TEXTURES.length;
   let done = 0;
   const tick = () => setProgress(++done / total);
   const fontJobs = fonts.map(f => Promise.race([document.fonts.load(f), new Promise(r => setTimeout(r, 5000))]).catch(() => {}).then(tick));
   const imgJobs = photoItems.map(p => loadImage(thumbUrl(p.datei)).catch(err => { console.warn(err.message); return null; }).then(img => { tick(); return img; }));
   const portraitJobs = ((CONFIG.intro && CONFIG.intro.portraits) || []).map(f => loadImage(thumbUrl(f)).catch(() => null));
-  const [, images, portraitImgs] = await Promise.all([Promise.all(fontJobs), Promise.all(imgJobs), Promise.all(portraitJobs)]);
+  const texLoader = new THREE.TextureLoader();
+  const texJobs = PLANET_TEXTURES.map(f => texLoader.loadAsync('./assets/textures/' + f).then(tx => { planetTextures[f] = tx; tick(); }).catch(() => { console.warn('Textur fehlt: ' + f); tick(); }));
+  const [, images, portraitImgs] = await Promise.all([Promise.all(fontJobs), Promise.all(imgJobs), Promise.all(portraitJobs), Promise.all(texJobs)]);
   const textures = images.map(img => {
     if (!img) return null;
     const tex = new THREE.Texture(img);
@@ -150,7 +148,7 @@ function build({ photoItems, textures }) {
   const galaxy = new Galaxy({ count: Q.galaxy, radius: 15, arms: 4, colors: CONFIG.farben, pixelRatio: R.pixelRatio });
   world.add(galaxy.points);
 
-  const blackHole = new BlackHole({ radius: 1.25, colors: CONFIG.farben });
+  const blackHole = new BlackHole({ radius: 1.25, colors: CONFIG.farben, steps: Q.tier === 'high' ? 110 : Q.tier === 'medium' ? 70 : 0 });
   world.add(blackHole.group);
 
   const heart = new Heart({ count: Q.heart, streamCount: Q.stream, colors: CONFIG.farben, pixelRatio: R.pixelRatio });
@@ -170,7 +168,7 @@ function build({ photoItems, textures }) {
   const shooting = new ShootingStars({ pixelRatio: R.pixelRatio });
   scene.add(shooting.group);
 
-  const planets = new Planets({ defs: PLANETS, labelRoot: $('labels'), onSelect: id => { if (phase === 'main' && !flying) openPlanet(PLANETS.find(p => p.id === id)); } });
+  const planets = new Planets({ defs: PLANETS, labelRoot: $('labels'), textures: planetTextures, onSelect: id => { if (phase === 'main' && !flying) openPlanet(PLANETS.find(p => p.id === id)); } });
   world.add(planets.group);
 
   const fireworks = new Fireworks({ max: Q.tier === 'low' ? 5000 : 9000, pixelRatio: R.pixelRatio });
@@ -534,19 +532,22 @@ function renderMap(body) {
   sec('Spiele', PLANETS.filter(p => p.kind === 'spiel'));
   sec('Überraschungen', PLANETS.filter(p => p.kind === 'ueberraschung'));
   sec('Finale', PLANETS.filter(p => p.kind === 'finale'));
+  const credit = document.createElement('p'); credit.className = 'map-sec'; credit.style.marginTop = '14px';
+  credit.innerHTML = 'Planetentexturen: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener" style="color:inherit">Solar System Scope</a> (CC BY 4.0)';
+  body.appendChild(credit);
 }
 let hintShown = false;
 function hideHint() { if (!hintShown) return; hintShown = false; $('hint').classList.remove('show'); }
 
 /* ------------------------------------------------------------------ intro */
 // timeline in seconds after tapping "Öffnen":
-// card → particles (0–1.25) · fairy-tale flight (1.25–13.25) · warp + journey through space · arrival in the heart
-// → surprise party → Happy Birthday → the song for Amelie
-let dissolve, warp, journey, sky, portraitTextures = [];
-let skyStarted = false, skyEnded = false, arrived = false, flashed = {};
+// card → particles (0–1.25) · odyssey past Earth, Moon, Mars, Jupiter, Saturn into a wormhole (1.25–20.85)
+// · out of the wormhole into the galaxy, the two portraits fly into the heart · surprise party → Happy Birthday → song
+let dissolve, warp, journey, odyssey, portraitTextures = [];
+let odStarted = false, odEnded = false, arrived = false, flashed = {};
 const tmpV = new THREE.Vector3();
-const SKY_START = 1.25, SKY_DUR = 12, SPACE_START = SKY_START + SKY_DUR;
-const J_START = SPACE_START + .6, J_DUR = 8, J_ARRIVE = .779 * J_DUR + .9;
+const OD_START = 1.25, OD_DUR = 19.6, SPACE_START = OD_START + OD_DUR;
+const J_START = SPACE_START + .25, J_DUR = 6.5, J_ARRIVE = .779 * J_DUR + .9;
 const ARRIVE_AT = J_START + J_ARRIVE;
 const HEART_POS = new THREE.Vector3(0, 5.1, 0);
 const BLOOM = { strength: R.bloom.strength, threshold: R.bloom.threshold, exposure: R.renderer.toneMappingExposure };
@@ -563,8 +564,8 @@ function startIntro() {
   $('letterbox').classList.add('on');
   const intro = CONFIG.intro || {};
   warp = new Warp({ camera, count: Q.warp });
-  sky = new SkyFlight({ camera, portraits: portraitTextures, quality: Q, captionsEl: $('cine'), lines: intro.himmel || [] });
-  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: intro.weltall || intro.zeilen || [] });
+  odyssey = new Odyssey({ camera, quality: Q, captionsEl: $('cine'), lines: intro.reise || [], textures: planetTextures });
+  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: intro.ankunft || [] });
   setTimeout(() => { if (phase === 'intro') $('skipBtn').hidden = false; }, 1500);
 }
 
@@ -573,26 +574,22 @@ function flash(kind = 'go') {
   f.classList.remove('go', 'white'); void f.offsetWidth; f.classList.add(kind);
 }
 
-function enterSky() {
-  skyStarted = true;
-  sky.scene.add(camera);
-  R.setScene(sky.scene);
-  R.bloom.strength = .32; R.bloom.threshold = .93;
-  R.renderer.toneMappingExposure = .82;
-  $('cine').classList.add('sky');
-  sky.start();
-  if (Sound.ctx) { Sound.playNow(buildSkyTheme(Sound)); Sound.wind(true); }
+function enterOdyssey() {
+  odStarted = true;
+  odyssey.scene.add(camera);
+  R.setScene(odyssey.scene);
+  R.bloom.strength = .55; R.bloom.threshold = .86;
+  odyssey.start();
+  if (Sound.ctx) Sound.playSeq(buildOdysseyTheme(Sound), { song: false });
 }
 
-function leaveSky() {
-  skyEnded = true;
+function leaveOdyssey() {
+  odEnded = true;
   scene.add(camera);
   R.setScene(scene);
   R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold;
   R.renderer.toneMappingExposure = BLOOM.exposure;
-  $('cine').classList.remove('sky');
-  sky.dispose();
-  Sound.wind(false);
+  odyssey.finish();
   camera.position.copy(journey.startPos);
   camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
   warp.start();
@@ -603,13 +600,13 @@ function leaveSky() {
 function updateIntro(dt) {
   introT += dt;
   dissolve && dissolve.update(dt);
-  if (!flashed.a && introT >= SKY_START - .25) { flashed.a = true; flash('white'); }
-  if (!skyStarted && introT >= SKY_START) enterSky();
-  if (skyStarted && !skyEnded) {
-    if (!flashed.b && sky.t >= SKY_DUR - .25) { flashed.b = true; flash('white'); }
-    if (sky.update(dt) === 'done') leaveSky();
+  if (!flashed.a && introT >= OD_START - .25) { flashed.a = true; flash('white'); }
+  if (!odStarted && introT >= OD_START) enterOdyssey();
+  if (odStarted && !odEnded) {
+    if (!flashed.b && odyssey.t >= OD_DUR - .3) { flashed.b = true; flash('white'); }
+    if (odyssey.update(dt) === 'done') leaveOdyssey();
   }
-  if (skyEnded) {
+  if (odEnded) {
     if (warp.active) warp.update(dt);
     if (introT >= J_START) {
       if (journey.t < 0) journey.start(J_DUR);
@@ -619,7 +616,7 @@ function updateIntro(dt) {
       camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
     }
   }
-  fade = skyEnded ? ease.inOutSine(clamp((introT - SPACE_START - .4) / 5.5, 0, 1)) : 0;
+  fade = odEnded ? ease.inOutSine(clamp((introT - SPACE_START) / 3.5, 0, 1)) : 0;
   if (introT > J_START + J_DUR + .4) enterMain();
 }
 
@@ -666,17 +663,17 @@ function playKaraoke(which, onEnd) {
 function skipIntro() {
   if (phase !== 'intro') return;
   dissolve && dissolve.dispose();
-  if (!skyEnded) {
-    if (skyStarted) { scene.add(camera); R.setScene(scene); R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; R.renderer.toneMappingExposure = BLOOM.exposure; }
-    skyStarted = skyEnded = true;
-    sky.dispose();
+  if (!odEnded) {
+    if (odStarted) { scene.add(camera); R.setScene(scene); R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; R.renderer.toneMappingExposure = BLOOM.exposure; }
+    odStarted = odEnded = true;
+    odyssey.finish();
   }
-  Sound.wind(false);
+  Sound.stopSeq(false);
   if (warp && warp.active) warp.stop();
   journey && journey.finish();
   Sound.skipCinematic();
   $('intro').hidden = true;
-  $('cine').classList.remove('in', 'sky');
+  $('cine').classList.remove('in', 'big');
   fade = 1;
   enterMain();
   if (!arrived) setTimeout(onArrive, 350);
@@ -745,7 +742,8 @@ function frame() {
 
   if (phase === 'main' && controls.enabled && !flying) controls.update(dt);
   updateHover();
-  R.updateLens(o.blackHole.group.getWorldPosition(tmpV), 1.25, skyStarted && !skyEnded ? 0 : .3 * fade);
+  if (odStarted && !odEnded) R.updateLens(odyssey.wormPos, odyssey.wormR, 1.1);
+  else R.updateLens(o.blackHole.group.getWorldPosition(tmpV), 1.25, .3 * fade);
   R.render(t);
   if (phase === 'main' && !flying) guard.update(dt);
 }

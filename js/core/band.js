@@ -159,6 +159,26 @@ export function createBand(S) {
       s.connect(f); f.connect(sg); sg.connect(bus); s.start(t, Math.random() * .5, .2);
     },
 
+    /** pipe organ: additive sine drawbars */
+    organ(t, n, d, { bus, verb, vel = .03, wet = .55, bright = .5 }) {
+      const f = midi(n), g = ctx.createGain(), lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = 1400 + bright * 4200;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vel, t + .06); g.gain.setValueAtTime(vel, t + Math.max(.07, d - .08)); g.gain.linearRampToValueAtTime(0, t + d + .3);
+      [[1, 1], [2, .55], [3, .3], [4, .22], [6, .1], [8, .07]].forEach(([h, a]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.value = f * h; o.detune.value = (Math.random() - .5) * 5; og.gain.value = a;
+        o.connect(og); og.connect(lp); o.start(t); o.stop(t + d + .35);
+      });
+      lp.connect(g); route(g, bus, verb, wet);
+    },
+
+    /** clock tick */
+    tick(t, { bus, vel = .05 }) {
+      const n = ctx.createBufferSource(); n.buffer = noise();
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 3;
+      const g = ctx.createGain(); g.gain.setValueAtTime(vel, t); g.gain.exponentialRampToValueAtTime(.0005, t + .03);
+      n.connect(f); f.connect(g); g.connect(bus); n.start(t, Math.random() * .5, .05);
+    },
+
     /* ---------------- surprise party ---------------- */
     pop(t, { bus, vel = .5 }) {
       const n = ctx.createBufferSource(); n.buffer = noise();

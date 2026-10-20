@@ -3,7 +3,7 @@
 **Live:** <https://ahuemmer3.github.io/fuer-amelie/>
 
 Eine interaktive 3D-Webseite als Geschenk: Startkarte, Warp-Flug, eine Galaxie mit
-schwarzem Loch und Partikelherz, kreisende Fotos, 11 Spiele, Überraschungen und ein
+schwarzem Loch im Interstellar-Stil und Partikelherz, kreisende Fotos, 5 aufwendige Spiele, Überraschungen und ein
 finaler Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
 
 ---
@@ -26,16 +26,15 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 | Initialen fürs Sternbild-Spiel | `initialen: ['A', 'L']` |
 | Startkarte (Titel, Untertitel, Datum, Button) | `karte` |
 | Großer Schriftzug (wechselt) | `titel` |
-| Texte im Intro-Film (Märchenflug + Weltall), Porträts | `intro.himmel`, `intro.weltall` |
+| Texte im Intro-Film (Flug durchs Sonnensystem), Porträts | `intro.reise`, `intro.ankunft` |
 | Geburtstagstorte (Kerzen, Wunsch) | `geburtstag` |
 | Farben | `farben` |
 | Musik | `musik.datei` |
 | Liebesbotschaften auf den Ringen | `botschaften` |
 | Fotos mit Überschrift und Text | `fotos` |
-| Memory-Fotos, Puzzle-Foto | `memoryFotos`, `puzzleFoto` |
+| Memory-Fotos | `memoryFotos` |
 | Quizfragen und Ergebnis-Texte | `quiz`, `quizErgebnisse` |
-| Gutscheine | `rubbellos`, `gluecksrad`, `herzenFangen.belohnung` |
-| Passwort-Frage und Antwort | `geheimnis` |
+| Gutscheine | `rubbellos`, `herzenFangen.belohnung` |
 | Zeitstrahl | `zeitstrahl` |
 | Gründe, warum du sie liebst | `gruende` |
 | Finaler Liebesbrief | `liebesbrief` |
@@ -43,7 +42,6 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 
 > **Unbedingt vor dem Verschicken anpassen:**
 > - `zusammenSeit`: Ohne Datum fragt der Zähler sie danach.
-> - `geheimnis.frage` und `geheimnis.passwort`: Der Platzhalter ist „liebe“.
 > - Die Quiz-Antworten (`richtig` = Nummer der richtigen Antwort, gezählt ab 0).
 > - Der erste Eintrag im `zeitstrahl` („Wie alles begann“).
 
@@ -60,7 +58,7 @@ python tools/fotos-optimieren.py "C:/Pfad/zu/deinen/fotos"
 Das Skript dreht die Fotos richtig herum und **entfernt GPS-Standort und alle Metadaten**.
 Es speichert die Fotos als WebP und gibt eine Liste `foto-01.webp …` aus. Danach die
 Dateinamen in `config.js` bei `fotos`, `memoryFotos`, `puzzleFoto`, `zeitstrahl`,
-`geheimnis.foto` und `liebesbrief.foto` eintragen. Die ersten Fotos der Liste kreisen in
+`liebesbrief.foto` eintragen. Die ersten Fotos der Liste kreisen in
 der Galaxie: am Laptop 16, am Handy 9–12.
 
 ### Musik
@@ -151,7 +149,7 @@ Vorschau deshalb am besten erst, wenn alles fertig ist (z. B. indem du dir selbs
 - **Datenschutz:** GitHub Pages ist öffentlich. Jeder, der den Link kennt, kann die Seite und
   die Fotos sehen, und beim kostenlosen GitHub-Plan ist auch das Repository öffentlich. Die
   Seite ist für Suchmaschinen auf `noindex` gestellt, aber das ist kein Passwortschutz. Das
-  Passwort fürs Geheimfach steht lesbar in `config.js`. Nimm also nur Fotos, mit denen ihr
+  Nimm also nur Fotos, mit denen ihr
   beide einverstanden seid.
 - **Fortschritt** (erledigte Spiele, Wünsche, Easter Eggs) speichert ihr Browser lokal.
   Auf einem anderen Gerät beginnt sie von vorn.
@@ -169,7 +167,7 @@ behält. Die Musik wird live im Browser erzeugt, es gibt keine Musikdatei.
 
 ### Geheime Abkürzungen (nur ihr zwei wisst davon)
 
-- **Alles lösen:** 3 Sekunden auf den Planeten-Zähler unten rechts (z. B. „4/11“) drücken.
+- **Alles lösen:** 3 Sekunden auf den Planeten-Zähler unten rechts (z. B. „2/5“) drücken.
   Alle Spiele gelten als geschafft und das letzte Geheimnis (der Brief) öffnet sich.
 - **Ein Spiel lösen:** In einem offenen Spiel 2 Sekunden auf die Überschrift drücken.
   Nur dieses Spiel gilt dann als geschafft.
@@ -205,3 +203,11 @@ tools/                Foto-Optimierer und Playwright-Tests (für die Seite nicht
 
 Technik: Three.js 0.186 über eine Importmap (jsDelivr), eigene GLSL-Shader für alle
 Partikel, EffectComposer mit UnrealBloom, ACES-Tonemapping, Vignette und Filmkorn.
+
+---
+
+## Credits
+
+- Planetentexturen und Milchstraße: [Solar System Scope](https://www.solarsystemscope.com/textures/), Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- 3D: [three.js](https://threejs.org) (MIT)
+- Alle Musikstücke (Intro, Spielmusik, der Song „Amelie“) sind eigene Kompositionen, die live im Browser erzeugt werden. „Happy Birthday to You“ ist gemeinfrei.

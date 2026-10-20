@@ -35,22 +35,20 @@ export const CONFIG = {
   /* ---------- Großer Schriftzug in der Galaxie (wechselt alle paar Sekunden) ---------- */
   titel: ['Happy Birthday, Amelie', 'Ich liebe dich', 'Meine Lieblings-Nervensäge'],
 
-  /* ---------- Intro-Film: Texte beim Flug ----------
-     himmel  = beim Märchenflug durch die Wolken (4 Zeilen)
-     weltall = beim Flug durchs All (3 Zeilen, eine Zeile mit „&“ wird groß angezeigt)
+  /* ---------- Intro-Film: Texte beim Flug durchs Sonnensystem ----------
+     reise   = 6 Zeilen: Erde, Mond, Mars, Jupiter, Saturn, Wurmloch (eine Zeile mit „&“ wird groß angezeigt)
+     ankunft = Zeile beim Anflug auf eure Galaxie
      Die zwei Porträts liegen in assets/photos/thumbs/ (portrait-aaron.webp, portrait-amelie.webp) */
   intro: {
-    himmel: [
-      'Es war einmal …',
-      '… ein Mädchen und ein Junge, die zusammen aufgewachsen sind.',
+    reise: [
+      'Irgendwo auf diesem kleinen blauen Planeten …',
+      '… sind ein Mädchen und ein Junge zusammen aufgewachsen.',
       'Sie kannten sich ihr ganzes Leben lang …',
-      '… und haben sich trotzdem erst viel später richtig gefunden.'
-    ],
-    weltall: [
+      '… und haben sich trotzdem erst viel später richtig gefunden.',
       'Am 24. Dezember 2025 hat es endlich Klick gemacht.',
-      'Amelie & Aaron',
-      'Und heute ist dein Tag.'
+      'Amelie & Aaron'
     ],
+    ankunft: ['Und heute ist dein Tag.'],
     portraits: ['portrait-aaron.webp', 'portrait-amelie.webp']
   },
 

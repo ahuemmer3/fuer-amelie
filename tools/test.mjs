@@ -92,17 +92,17 @@ const scenarios = {
       });
     }
   },
-  async sky() {
-    await session('sky', { device: process.argv[3] || 'desktop', query: '?q=high' }, async (page, shot) => {
+  async odyssey() {
+    await session('od-' + (process.argv[3] || 'desktop'), { device: process.argv[3] || 'desktop', query: '?q=high' }, async (page, shot) => {
       await page.waitForSelector('#intro:not([hidden])'); await page.waitForTimeout(800);
       await page.click('#openBtn');
-      for (const [sec, label] of [[2.2, 'a'], [4.2, 'b'], [6.4, 'c'], [8.6, 'd'], [10.6, 'e'], [12.6, 'f']]) {
+      for (const [sec, label] of [[1.8, 'a-earth'], [3.8, 'b'], [6.0, 'c-moon'], [8.6, 'd-mars'], [12.2, 'e-jupiter'], [15.6, 'f-saturn'], [16.4, 'g-rings'], [19.2, 'h-wormhole'], [20.6, 'i-worm2'], [23.5, 'j-galaxy']]) {
         await page.waitForFunction(x => window.__galaxy.introT() >= x, sec, { timeout: 60000 }); await shot(label);
       }
     });
   },
   async games() {
-    const ids = (process.argv[3] || 'fangen,torte,song,sehtest,memory,quiz,sternbild,rubbellos,gluecksrad,puzzle,wunschstern,herzsuche,geheimfach,umlaufbahn,zeit,momente,gruende,finale').split(',');
+    const ids = (process.argv[3] || 'fangen,torte,song,sehtest,memory,quiz,sternbild,rubbellos,zeit,momente,gruende,finale').split(',');
     for (const device of ['desktop', 'iphone']) {
       await session('games-' + device, { device, query: '?skip&q=low' }, async (page, shot) => {
         await waitPhase(page, 'main');
@@ -116,67 +116,11 @@ const scenarios = {
       });
     }
   },
-  async interact() {
-    await session('interact', { device: 'iphone', query: '?skip&q=low' }, async (page, shot) => {
-      await waitPhase(page, 'main');
-      await page.evaluate(() => localStorage.clear());
-      const open = async id => { await page.evaluate(i => window.__galaxy.open(i), id); await page.waitForTimeout(900); };
-      const close = async () => { await page.keyboard.press('Escape'); await page.waitForTimeout(600); };
-      // memory: click matching pairs
-      await open('memory');
-      const keys = await page.$$eval('.mem-card', cs => cs.map(c => c.dataset.k));
-      const seen = {};
-      keys.forEach((k, i) => (seen[k] = seen[k] || []).push(i));
-      for (const [a, b] of Object.values(seen)) {
-        const cards = await page.$$('.mem-card');
-        await cards[a].click(); await cards[b].click(); await page.waitForTimeout(350);
-      }
-      await page.waitForTimeout(900); await shot('memory-done'); await close();
-      // quiz: always the configured answer
-      await open('quiz');
-      for (let q = 0; q < 5; q++) {
-        const answers = await page.$$('.quiz-a button');
-        const idx = await page.evaluate(n => import('./config.js').then(m => m.CONFIG.quiz[n].richtig), q);
-        await answers[idx].click(); await page.waitForTimeout(250);
-        await page.click('.g-row .g-btn.primary'); await page.waitForTimeout(250);
-      }
-      await shot('quiz-done'); await close();
-      // secret
-      await open('geheimfach');
-      await page.fill('#secretInput', 'falsch'); await page.press('#secretInput', 'Enter'); await page.waitForTimeout(400);
-      await page.fill('#secretInput', 'Liebe'); await page.press('#secretInput', 'Enter'); await page.waitForTimeout(900);
-      await shot('secret-done'); await close();
-      // hidden heart: 3 rounds
-      await open('herzsuche');
-      for (let r = 0; r < 3; r++) { await page.click('.hh-grid button[aria-label="Herz"]'); await page.waitForTimeout(1100); }
-      await shot('herz-done'); await close();
-      // wheel
-      await open('gluecksrad');
-      await page.click('.g-row .g-btn.primary'); await page.waitForTimeout(9000);
-      await shot('wheel-done'); await close();
-      // scratch
-      await open('rubbellos');
-      const box = await page.$('.scratch canvas').then(e => e.boundingBox());
-      for (let y = box.y + 8; y < box.y + box.height; y += 22) {
-        await page.mouse.move(box.x + 4, y); await page.mouse.down();
-        await page.mouse.move(box.x + box.width - 4, y, { steps: 6 }); await page.mouse.up();
-      }
-      await page.waitForTimeout(900); await shot('scratch-done'); await close();
-      // wish
-      await open('wunschstern');
-      await page.fill('#wishText', 'Ein Wochenende am Meer mit dir');
-      await page.click('.g-btn.gold'); await page.waitForTimeout(5200);
-      await shot('wish-flight');
-      const prog = await page.evaluate(() => JSON.parse(localStorage.getItem('gdl_progress')));
-      console.log('  erledigt:', prog.done.join(', '), '| Wünsche:', prog.wishes.length);
-      await page.waitForTimeout(1500); await shot('after');
-    });
-  },
   async finale() {
     for (const device of ['desktop', 'iphone']) {
       await session('finale-' + device, { device, query: '?skip&q=' + (device === 'iphone' ? 'medium' : 'high') }, async (page, shot) => {
         await waitPhase(page, 'main');
-        await page.evaluate(() => localStorage.setItem('gdl_progress', JSON.stringify({ done: ['fangen', 'memory', 'quiz', 'sternbild', 'rubbellos', 'gluecksrad', 'puzzle', 'wunschstern', 'herzsuche', 'geheimfach', 'umlaufbahn'], eggs: [], wishes: [] })));
+        await page.evaluate(() => localStorage.setItem('gdl_progress', JSON.stringify({ done: ['fangen', 'memory', 'quiz', 'sternbild', 'rubbellos'], eggs: [], wishes: [] })));
         await page.reload(); await waitPhase(page, 'main'); await page.waitForTimeout(2000);
         await shot('unlocked');
         await page.evaluate(() => window.__galaxy.open('finale'));

@@ -196,31 +196,29 @@ export function buildHappyBirthday(S) {
   return { title: 'Happy Birthday', events, lyrics, duration: endT + 2.5 };
 }
 
-/* ------------------------------------------------------------------ fairy-tale flight theme (12 s) */
-export function buildSkyTheme(S) {
+/* ------------------------------------------------------------------ space odyssey theme (20 s, original) */
+export function buildOdysseyTheme(S) {
   const band = createBand(S), bus = S.cine, verb = S.bigVerb;
-  const bpm = 120, s16 = 60 / bpm / 4, bar = 16 * s16;
-  const events = [], ev = (t, fn) => events.push({ t, fn });
-  const chords = [['D'], ['Bm'], ['G'], ['A'], ['D'], ['G', 'A']];
-  const mel = parseMelody('-:A4:2 -:D5:2 -:F#5:4 -:A5:8 -:F#5:4 -:D5:4 -:B4:8 -:G5:3 -:F#5:1 -:E5:4 -:D5:4 -:B4:4 ' +
-    '-:C#5:4 -:E5:4 -:A5:8 -:A5:3 -:B5:1 -:A5:4 -:F#5:4 -:D5:4 -:G5:4 -:B5:4 -:A5:8');
-  mel.notes.forEach(nt => ev(nt.at * s16, at => band.brass(at, [nt.n, nt.n - 12], nt.d * s16 * .95, { bus, verb, vel: .045, cutoff: 2600 })));
-  chords.forEach((parts, i) => {
-    const t0 = i * bar;
-    parts.forEach((nm, pi) => {
-      const c = chord(nm), len = bar / parts.length, tp = t0 + pi * len;
-      ev(tp, at => { band.strings(at, [...c.voice, c.voice[0] + 12], len, { bus, verb, vel: .016, attack: .15 }); band.bass(at, c.bass, len * .95, { bus, vel: .1 }); });
-      // driving string ostinato in sixteenths
-      const pat = [0, 7, 12, 7];
-      for (let s = 0; s < 16 / parts.length; s++) ev(tp + s * s16, at => band.pluck(at, 48 + c.root + pat[s % 4], s16 * .9, { bus, verb, vel: .035 }));
-    });
-    const r0 = chord(parts[0]).root;
-    ev(t0, at => band.timp(at, 36 + (r0 > 7 ? r0 - 12 : r0), { bus, verb, vel: .45 }));
-    if (i === 0 || i === 4) ev(t0, at => band.crash(at, { bus, verb, vel: .08, len: 2.5 }));
-    if (i === 3 || i === 5) for (let s = 8; s < 16; s++) ev(t0 + s * s16, at => band.timp(at, 38, { bus, verb, vel: .12 + (s - 8) * .03 }));
-    if (i >= 4) for (let s = 0; s < 16; s += 2) { const c = chord(parts[0]); const n = c.voice[(s / 2) % 3] + 24; ev(t0 + s * s16, at => band.bell(at, n, { bus, verb, vel: .03 })); }
+  const bar = 2.5, e8 = bar / 8, events = [], ev = (t, fn) => events.push({ t, fn });
+  const names = ['Am', 'F', 'C', 'G', 'Am', 'F', 'Dm', 'E'];
+  names.forEach((nm, i) => {
+    const c = chord(nm), t0 = i * bar, k = i / (names.length - 1);
+    const v = c.voice;
+    // low pedal
+    ev(t0, at => band.organ(at, 24 + c.root + (c.root > 7 ? 0 : 12), bar, { bus, verb, vel: .02 + .025 * k, bright: .2 }));
+    // pulsing ostinato in eighths
+    const pat = [v[0], v[1], v[2], v[0] + 12, v[2], v[1], v[0] + 12, v[1] + 12];
+    pat.forEach((n, s) => ev(t0 + s * e8, at => band.organ(at, n, e8 * 1.05, { bus, verb, vel: .016 + .022 * k, bright: .25 + .6 * k })));
+    // sustained high chords and a choir from the middle on
+    if (i >= 3) ev(t0, at => band.organ(at + .02, v[0] + 24, bar, { bus, verb, vel: .008 + .012 * k, bright: .9 }));
+    if (i >= 4) ev(t0, at => band.strings(at, v.map(n => n + 12), bar, { bus, verb, vel: .01 + .014 * k, attack: .6, cutoff: 2200 }));
+    if (i >= 5) ev(t0, at => band.timp(at, 33 + (c.root > 7 ? c.root - 12 : c.root), { bus, verb, vel: .25 + .25 * k }));
+    if (i === 6) [4, 6].forEach(s => ev(t0 + s * e8, at => band.timp(at, 33, { bus, verb, vel: .2 })));
+    if (i === 7) for (let s = 0; s < 16; s++) ev(t0 + s * bar / 16, at => band.timp(at, 33, { bus, verb, vel: .08 + s * .03 }));
   });
-  ev(5 * bar, at => band.swell(at, bar, { bus, verb, vel: .12 }));
+  // the clock keeps ticking
+  for (let t = 0; t < 18.8; t += 1.25) ev(t, at => band.tick(at, { bus, vel: .06 }));
+  ev(17.6, at => band.swell(at, 1.9, { bus, verb, vel: .16 }));
   events.sort((a, b) => a.t - b.t);
-  return { events, duration: 6 * bar };
+  return { events, duration: 20 };
 }

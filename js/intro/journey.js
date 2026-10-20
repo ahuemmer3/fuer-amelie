@@ -58,7 +58,8 @@ export class Journey {
     this.t = -1; this.done = false; this.arrived = false;
     this.heartPos = heartPos.clone();
 
-    const A = new THREE.Vector3(0, 22, 150), B = new THREE.Vector3(-13, 9, 118), C = new THREE.Vector3(5, 2, 88), D = new THREE.Vector3(15, 6, 62), E = new THREE.Vector3(6, 13, 40);
+    // short approach: from the wormhole exit into the heart of the galaxy
+    const A = new THREE.Vector3(0, 34, 112), B = new THREE.Vector3(-12, 24, 84), C = new THREE.Vector3(10, 16, 58), D = new THREE.Vector3(6, 12, 42), E = new THREE.Vector3(2, 11, 32);
     this.camCurve = new THREE.CatmullRomCurve3([A, B, C, D, E, home.pos.clone()], false, 'centripetal');
     this.beamCurve = new THREE.CatmullRomCurve3([A.clone().add(new THREE.Vector3(0, -2, -8)), B, C, D, E, this.heartPos], false, 'centripetal');
     this.home = home;
@@ -96,6 +97,8 @@ export class Journey {
     this.moon = new THREE.Mesh(new THREE.SphereGeometry(1.3, 32, 24), planetMaterial({ c1: '#3b3346', c2: '#a89bb5', c3: '#ffffff', bands: 4, turbulence: 9, rim: '#ffd6ea' }));
     this.group.add(this.moon);
     this.planetMats = [this.giant.material, this.ice.material, this.moon.material, ringMat];
+    // the real planets live in the odyssey now
+    this.giant.visible = this.ice.visible = this.moon.visible = false;
 
     // beam: head glow, flare and a twisting trail
     const glow = glowTexture();
