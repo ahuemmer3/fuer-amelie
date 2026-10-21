@@ -52,6 +52,10 @@ export function createRenderer(canvas, quality) {
   composer.setSize(window.innerWidth, window.innerHeight);
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
+  // a second layer drawn on top (our ship while the Earth fills the screen)
+  const overlayPass = new RenderPass(new THREE.Scene(), camera);
+  overlayPass.clear = false; overlayPass.clearDepth = true; overlayPass.enabled = false;
+  composer.addPass(overlayPass);
 
   let bloomScale = quality.bloomScale;
   const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), .85, .5, .42);
@@ -84,6 +88,8 @@ export function createRenderer(canvas, quality) {
     setPixelRatio(v) { dpr = v; resize(); },
     /** render a different scene (the solar system during the intro) */
     setScene(s) { renderPass.scene = s; },
+    /** scene drawn on top of everything (null = off) */
+    setOverlay(s) { overlayPass.enabled = !!s; if (s) overlayPass.scene = s; },
     get pixelRatio() { return dpr; },
     setBloomScale(v) { bloomScale = v; composer.setSize(window.innerWidth, window.innerHeight); }
   };

@@ -18,7 +18,7 @@ import { Planets } from './scene/planets.js';
 import { Fireworks } from './scene/fireworks.js';
 import { WishStars } from './scene/wishstars.js';
 import { CardDissolve } from './intro/card.js';
-import { SolarFlight } from './intro/solarflight.js';
+import { SolarFlight, FLIGHT } from './intro/solarflight.js';
 import { HomeZoom } from './intro/homezoom.js';
 import { Karaoke } from './ui/karaoke.js';
 import { buildSong, buildHappyBirthday, buildFlightTheme } from './core/songs.js';
@@ -575,6 +575,11 @@ const BLOOM = { strength: R.bloom.strength, threshold: R.bloom.threshold, exposu
 const SOLAR_BLOOM = { strength: .5, threshold: .88 };
 let bloomBase = BLOOM;
 const GALAXY_LIGHT = new THREE.Vector3(.35, .8, .5).normalize();
+// our ship is drawn on its own layer while it flies with us down to the house and into the heart
+const shipLayer = new THREE.Scene();
+const shipLight = new THREE.DirectionalLight('#fff4ea', 2.2);
+shipLayer.add(shipLight, shipLight.target, new THREE.HemisphereLight('#d9c8ff', '#2a1430', .7));
+let diveShip = null;
 
 function startIntro() {
   phase = 'intro'; introT = 0;
@@ -623,7 +628,7 @@ function onZoomEvent(ev) {
   if (ev === 'up' && !intro) Sound.play('whoosh');
   if (ev === 'arrive') {
     homeZoom = null;
-    if (intro) { onArrive(); enterMain(); return; }
+    if (intro) { dropShip(); onArrive(); enterMain(); return; }
     phase = 'main';
     controls.enabled = true;
     controls.update();
@@ -631,6 +636,14 @@ function onZoomEvent(ev) {
     $('title').classList.add('show');
     if (!Progress.eggs().includes('zuhause')) setTimeout(() => egg('zuhause', CONFIG.easterEggs.zuhause), 500);
   }
+}
+
+function dropShip() {
+  if (!diveShip) return;
+  shipLayer.remove(diveShip.group, diveShip.trail);
+  diveShip.dispose();
+  diveShip = null;
+  R.setOverlay(null);
 }
 
 /** close to the Earth the glow would wash it out: turn the bloom down with the distance */
@@ -656,12 +669,17 @@ function enterSolar() {
   bloomBase = SOLAR_BLOOM;
   R.bloom.strength = SOLAR_BLOOM.strength; R.bloom.threshold = SOLAR_BLOOM.threshold;
   solar.start();
-  if (Sound.ctx) Sound.playSeq(buildFlightTheme(Sound), { song: false });
+  if (Sound.ctx) Sound.playSeq(buildFlightTheme(Sound, FLIGHT), { song: false });
 }
 
 /** at the end of the flight: down to your house (the music follows the dive) */
 function startDive() {
-  homeZoom.start({ look: solar.lookTarget.clone(), back: homeView() });
+  const { ship, vel } = solar.releaseShip();
+  diveShip = ship;
+  shipLayer.add(ship.group, ship.trail);
+  R.setOverlay(shipLayer);
+  const heart = objects.heart.group.getWorldPosition(new THREE.Vector3());
+  homeZoom.start({ look: solar.lookTarget.clone(), back: homeView(), ship: { ship, vel, scale: FLIGHT.SHIP, light: shipLight, heart, pixelRatio: R.pixelRatio } });
   const T = homeZoom.T, touch = T.A + T.D, up = touch + T.H;
   Sound.homecoming({ touch, up, arrive: up + T.U + T.B });
 }
@@ -698,7 +716,8 @@ function updateIntro(dt) {
   if (solar && solarStarted) {
     const ev = solar.update(dt);
     if (ev === 'dive') startDive();
-    else if (ev) Sound.play('whoosh');
+    else if (ev === 'launch') Sound.flyby({ from: 0, to: 0, dur: 1.5, vol: .12 });
+    else if (ev) Sound.flyby({ ...{ saturn: { from: -.8, to: .8 }, jupiter: { from: .8, to: -.8 }, mars: { from: -.6, to: .9 } }[ev], dur: 1.9 });
   }
 }
 
@@ -757,6 +776,7 @@ function skipIntro() {
   dissolve && dissolve.dispose();
   Sound.stopSeq(false);
   if (homeZoom) { homeZoom.finish(); homeZoom = null; }
+  dropShip();
   earthToGalaxy(false);
   R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; R.renderer.toneMappingExposure = BLOOM.exposure;
   fgFade = 1;

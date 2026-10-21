@@ -227,15 +227,16 @@ export class Starship {
     return geo;
   }
 
-  emit(pos, spread) {
+  emit(pos, spread, drift = null) {
     const i = this.sparkI; this.sparkI = (this.sparkI + 1) % this.sparkN;
     this.sPos[i * 3] = pos.x; this.sPos[i * 3 + 1] = pos.y; this.sPos[i * 3 + 2] = pos.z;
     this.sVel[i * 3] = (Math.random() - .5) * spread; this.sVel[i * 3 + 1] = (Math.random() - .5) * spread; this.sVel[i * 3 + 2] = (Math.random() - .5) * spread;
+    if (drift) { this.sVel[i * 3] += drift.x; this.sVel[i * 3 + 1] += drift.y; this.sVel[i * 3 + 2] += drift.z; }
     this.sLife[i] = 1; this.sSize[i] = .4 + Math.random() * .8;
   }
 
-  /** thrust 0..1; look: world point the two of you look at (camera close-ups); wave: Amelie waves */
-  update(t, dt, { thrust = this.thrust, look = null, wave = 0, pixelRatio = 1, sparkle = 1 } = {}) {
+  /** thrust 0..1; look: world point the two of you look at (camera close-ups); wave: Amelie waves; drift: extra sparkle velocity */
+  update(t, dt, { thrust = this.thrust, look = null, wave = 0, pixelRatio = 1, sparkle = 1, drift = null } = {}) {
     this.thrust += (thrust - this.thrust) * Math.min(1, dt * 4);
     const k = this.thrust;
     this.flames.forEach((f, i) => {
@@ -248,12 +249,12 @@ export class Starship {
     this.amelie.update(t, dt, { look, wave });
     // sparkles from the engines
     this.group.updateMatrixWorld();
-    if (k > .05 && sparkle) this.engines.forEach(e => {
-      for (let n = 0; n < 2; n++) if (Math.random() < k) this.emit(e.localToWorld(this.tmp.set(0, 0, -.8 - Math.random() * .4)), .5);
+    if (k > .05 && sparkle > 0) this.engines.forEach(e => {
+      for (let n = 0; n < 2; n++) if (Math.random() < k * sparkle) this.emit(e.localToWorld(this.tmp.set(0, 0, -.8 - Math.random() * .4)), .5, drift);
     });
     for (let i = 0; i < this.sparkN; i++) {
       if (this.sLife[i] <= 0) continue;
-      this.sLife[i] = Math.max(0, this.sLife[i] - dt * (sparkle ? .9 : 3));
+      this.sLife[i] = Math.max(0, this.sLife[i] - dt * (sparkle > 0 ? .9 : 3));
       this.sPos[i * 3] += this.sVel[i * 3] * dt; this.sPos[i * 3 + 1] += this.sVel[i * 3 + 1] * dt; this.sPos[i * 3 + 2] += this.sVel[i * 3 + 2] * dt;
     }
     const at = this.trail.geometry.attributes;

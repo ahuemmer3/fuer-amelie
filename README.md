@@ -73,11 +73,12 @@ dem Tippen auf „Öffnen“, denn Browser erlauben keinen automatischen Ton.
 
 ### Euer Zuhause (Zoom von der Erde bis aufs Dach)
 
-Am Ende des Intro-Films fliegt euer Raumschiff zur Erde, dann zoomt die Kamera über Europa,
-Deutschland und die Fränkische Schweiz bis auf euer Dach in Püttlach. Dort fällt ein Herz-Pin mit
-„Unser Zuhause“ auf das Haus, das leuchtend umrandet ist. Danach geht es hoch hinaus, direkt in
-eure Galaxie, und die Party beginnt. Später startet ein Tipp auf die Erde in der Mitte den Zoom
-noch einmal.
+Am Ende des Intro-Films fliegt euer Raumschiff mit der Kamera über Europa, Deutschland und die
+Fränkische Schweiz bis zu eurem Haus in Püttlach und landet dort. Dann fällt ein Herz-Pin mit
+„Unser Zuhause“ auf das Haus, das leuchtend umrandet ist. Danach startet das Schiff wieder, kommt
+euch winkend entgegen, steigt mit hoch hinaus und fliegt direkt ins Herz eurer Galaxie: Die Party
+beginnt. Der Film dauert gut eine Minute, mit Triebwerksgeräusch, Vorbeiflug-Sounds und Wind beim
+Sturzflug. Später startet ein Tipp auf die Erde in der Mitte den Zoom noch einmal.
 
 - Koordinaten, Beschriftung, Hausumriss und Ortsnamen stehen in `config.js` bei `zuhause`.
 - Die Luftbilder liegen in `assets/zoom/` (9 Stufen, zusammen ca. 1,8 MB) und sind genau für

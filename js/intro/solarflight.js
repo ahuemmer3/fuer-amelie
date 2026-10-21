@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { clamp, mono, smoother } from '../core/utils.js';
+import { Sound } from '../core/audio.js';
 import { Starship } from './starship.js';
 
 /**
@@ -10,7 +11,9 @@ import { Starship } from './starship.js';
  */
 const TEX = './assets/textures/';
 const SHIP = .3;                 // ship scale: a tiny fighter next to giant planets
-const OVERVIEW = 9, SWOOP = 3.6, LAUNCH = OVERVIEW + SWOOP, END = 36;
+const OVERVIEW = 12, SWOOP = 3.6, LAUNCH = OVERVIEW + SWOOP, END = 42.4;
+/** film timing (seconds after the solar system appears), also used for the music */
+export const FLIGHT = { OVERVIEW, LAUNCH, END, SHIP };
 
 const PLANET_VS = /* glsl */`
   varying vec2 vUv; varying vec3 vN; varying vec3 vW;
@@ -151,6 +154,7 @@ export class SolarFlight {
     this.glows = [[sprite(glow, '#fff1d6', 170), .08, 150], [sprite(glow, '#ffb36b', 520, .5), .24, 170]];
     this.rays = sprite(raysTex(), '#ffe2c0', 380, .7);
     this.glows.push([this.rays, .17, 160]);
+    this.beacon = sprite(glow, '#ff8fc7', 10, .95);
 
     // light for the ship (the planets light themselves in their shaders)
     this.sunLight = new THREE.DirectionalLight('#fff1e2', 2.1);
@@ -234,7 +238,8 @@ export class SolarFlight {
     this.t = -1; this.captionAt = -1; this.events = {};
     this.lookTarget = new THREE.Vector3();
     this.tmp = new THREE.Vector3(); this.tmp2 = new THREE.Vector3(); this.m4 = new THREE.Matrix4(); this.q = new THREE.Quaternion();
-    this.ship.update(0, 0, { thrust: .25, pixelRatio });
+    this.shipVel = new THREE.Vector3();
+    this.ship.update(0, 0, { thrust: 1, pixelRatio });
   }
 
   buildRings(pl, tex) {
@@ -281,7 +286,8 @@ export class SolarFlight {
     const pp = name => this.planets[name].group.position.clone();
     const S = pp('saturn'), J = pp('jupiter'), M = pp('mars'), E = pp('earth');
     const pr = name => this.planets[name].R;
-    const W0 = P(830, .2, 24);
+    const W0 = this.W0 = P(830, .2, 24);
+    const Wpre = W0.clone().add(new THREE.Vector3(W0.x, 0, W0.z).normalize().multiplyScalar(900)).add(new THREE.Vector3(0, 90, 0));
     // Saturn: straight through the ring band at 1.75 R, crossing the tilted ring plane
     this.planets.saturn.tilt.updateMatrixWorld(true);
     const nS = new THREE.Vector3(0, 1, 0).applyQuaternion(this.planets.saturn.tilt.quaternion).normalize();
@@ -307,16 +313,17 @@ export class SolarFlight {
     this.moon.position.copy(E).add(this.moonOffset);
     const W9 = E.clone().addScaledVector(dirE, 75).add(new THREE.Vector3(0, 6, 0));
     const W10 = E.clone().addScaledVector(dirE, pr('earth') * 4.4);
-    const pts = [W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10];
+    const pts = [Wpre, W0, W1, W2, W3, W4, W5, W6, W7, W8, W9, W10];
     this.curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal');
     // timing: a slow cruise for the cockpit shot, fast between the planets, slower at each flyby
-    const WT = [LAUNCH, 19.6, 21.8, 23.6, 25.2, 26.8, 28.6, 30.4, 31.9, 34, END];
+    const WT = [2, LAUNCH, 23.2, 25.8, 27.8, 29.6, 31.4, 33.6, 35.6, 37.4, 39.8, END];
     const N = 2400, L = this.curve.getLengths(N), total = L[N];
     const uAt = i => L[Math.round(i / (pts.length - 1) * N)] / total;
     const keys = pts.map((_, i) => [WT[i], uAt(i)]);
+    keys.splice(1, 0, [LAUNCH - 2.2, uAt(1) * .93]);
     keys.push([END + 1.3, 1.04]);   // keeps the speed up at the end (u is clamped to 1)
     this.uOf = mono(keys);
-    const tOf = u => { let lo = LAUNCH, hi = END; for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (this.uOf(m) < u) lo = m; else hi = m; } return lo; };
+    const tOf = u => { let lo = WT[0], hi = END; for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (this.uOf(m) < u) lo = m; else hi = m; } return lo; };
     // when do we pass the planets? (closest approach)
     const closest = c => { let best = 1e9, bu = 0; for (let i = 0; i <= 900; i++) { const d = this.curve.getPointAt(i / 900).distanceTo(c); if (d < best) { best = d; bu = i / 900; } } return { t: tOf(bu), d: best }; };
     const Mo = this.moon.position.clone();
@@ -373,7 +380,7 @@ export class SolarFlight {
   overviewPose(f, out) {
     const H = this.portrait ? 3100 : 2100, phi = .35 + .03 * f;
     out.pos.set(Math.sin(phi) * H * .45, H * (1 - .1 * f / OVERVIEW), Math.cos(phi) * H * .45);
-    out.look.set(0, 0, 0).lerp(this.curve.points[0], .18 * f / OVERVIEW);
+    out.look.set(0, 0, 0).lerp(this.W0, .3 * smoother(f / OVERVIEW));
     return out;
   }
 
@@ -386,10 +393,10 @@ export class SolarFlight {
       case 'swoop': {
         const k = smoother((f - OVERVIEW) / SWOOP);
         const a = this.overviewPose(OVERVIEW, this.swoopA || (this.swoopA = { pos: new THREE.Vector3(), look: new THREE.Vector3() }));
-        const b = this.shot(this.shotIndex('chase'), LAUNCH, s, this.swoopB || (this.swoopB = { pos: new THREE.Vector3(), look: new THREE.Vector3() }));
-        const c = this.curve.points[0].clone().multiplyScalar(1.12).add(new THREE.Vector3(0, 520, 0));
+        const b = this.shot(this.shotIndex('chase'), f, s, this.swoopB || (this.swoopB = { pos: new THREE.Vector3(), look: new THREE.Vector3() }));
+        const c = this.W0.clone().multiplyScalar(1.12).add(new THREE.Vector3(0, 520, 0));
         out.pos.copy(a.pos).multiplyScalar((1 - k) * (1 - k)).addScaledVector(c, 2 * (1 - k) * k).addScaledVector(b.pos, k * k);
-        out.look.copy(a.look).lerp(b.look, smoother(k * 1.25));
+        out.look.copy(a.look).lerp(s.p, smoother(k * 1.6)).lerp(b.look, smoother((k - .6) / .4));
         return out;
       }
       case 'chase': {
@@ -433,7 +440,7 @@ export class SolarFlight {
       { kind: 'jupiter', at: ps.jupiter.t - 2.6 }, { kind: 'chase', at: ps.jupiter.t + 2.2 }, { kind: 'mars', at: ps.mars.t - 2.4 }, { kind: 'earth', at: ps.mars.t + 1.2 }
     ].sort((a, b) => a.at - b.at);
     // captions: personal lines spread over the flight, each with time to read
-    const L = this.lines, want = [[.6, 4.1], [4.9, 4.1], [OVERVIEW + .2, 3.8], [LAUNCH + 1.6, 3.6], [ps.saturn.t - 2.4, 4.8], [ps.jupiter.t - 2.2, 4.6], [ps.jupiter.t + 2.5, 4.2], [ps.mars.t + 1, 4.6]];
+    const L = this.lines, want = [[.6, 5.4], [6.2, 5.4], [OVERVIEW + .1, 4.6], [LAUNCH + 1.6, 4.2], [ps.saturn.t - 2.6, 5.6], [ps.jupiter.t - 2.2, 5.4], [ps.jupiter.t + 3.2, 5], [ps.mars.t + 1.6, 5.6]];
     this.caps = []; let free = 0;
     want.forEach(([at, dur], i) => { if (!L[i]) return; const t0 = Math.max(at, free); this.caps.push([t0, i, dur]); free = t0 + dur + .15; });
   }
@@ -451,23 +458,16 @@ export class SolarFlight {
     if (f >= LAUNCH) fire('launch');
     ['saturn', 'jupiter', 'mars'].forEach(n => { if (f >= this.pass[n].t - .4) fire(n); });
 
-    // ship: waits at the edge of the system, then the flight (and after END the dive into the Earth)
+    // ship: comes in from deep space, then the flight; at the end the zoom takes it over (releaseShip)
     const s = this.shipAt(Math.min(f, END));
-    if (f > END) {
-      if (!this.dive) this.dive = { p: s.p.clone(), v: s.fw.clone().multiplyScalar(48), k: 0 };
-      const home = this.earth.toWorld(this.tmp.set(0, 0, 0), new THREE.Vector3());
-      const want = home.sub(this.dive.p).normalize().multiplyScalar(48 + (f - END) * 40);
-      this.dive.v.lerp(want, Math.min(1, dt * 3));
-      this.dive.p.addScaledVector(this.dive.v, dt);
-      s.p.copy(this.dive.p); s.fw.copy(this.dive.v).normalize();
-      s.rt.crossVectors(s.fw, new THREE.Vector3(0, 1, 0)).normalize(); s.up.crossVectors(s.rt, s.fw).normalize();
-      const dE = this.dive.p.distanceTo(this.earth.center(this.tmp2)) / this.planets.earth.R;
-      this.ship.group.visible = dE > 1.08;
+    if (!this.released) {
+      const g = this.ship.group;
+      if (this.lastP) this.shipVel.lerp(this.tmp.copy(s.p).sub(this.lastP).divideScalar(Math.max(dt, 1e-3)), Math.min(1, dt * 6));
+      this.lastP = (this.lastP || new THREE.Vector3()).copy(s.p);
+      g.position.copy(s.p);
+      this.m4.makeBasis(this.tmp.crossVectors(s.up, s.fw).normalize(), s.up, s.fw);
+      g.quaternion.setFromRotationMatrix(this.m4).multiply(this.q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), s.roll));
     }
-    const g = this.ship.group;
-    g.position.copy(s.p);
-    this.m4.makeBasis(this.tmp.crossVectors(s.up, s.fw).normalize(), s.up, s.fw);
-    g.quaternion.setFromRotationMatrix(this.m4).multiply(this.q.setFromAxisAngle(new THREE.Vector3(0, 0, 1), s.roll));
 
     // camera
     if (f <= END) {
@@ -493,7 +493,18 @@ export class SolarFlight {
     const inCockpit = shotNow && shotNow.kind === 'cockpit';
     const ci = this.shotIndex('cockpit'), cs = this.shots[ci].at;
     const wave = inCockpit ? smoother((f - cs - .5) / .5) * (1 - smoother((f - cs - 3.4) / .6)) : 0;
-    this.ship.update(f, dt, { thrust: f < LAUNCH ? .22 : f > END ? .6 : 1, look: inCockpit ? cam.position : null, wave, pixelRatio: this.pixelRatio, sparkle: f < END ? 1 : 0 });
+    if (!this.released) {
+      this.ship.update(f, dt, { thrust: 1, look: inCockpit ? cam.position : null, wave, pixelRatio: this.pixelRatio });
+      // engine sound: louder the closer the camera is, higher the faster we fly, panned with the ship
+      const dShip = cam.position.distanceTo(s.p);
+      if (f > OVERVIEW - .5 && !this.engineOn) { this.engineOn = true; Sound.engineStart(); }
+      const ndc = this.tmp2.copy(s.p).project(cam);
+      Sound.setEngine(clamp(2.6 / Math.max(dShip, .1), 0, 1) * smoother((f - OVERVIEW + .5) / 2), clamp(this.shipVel.length() / 90, 0, 1), ndc.z < 1 ? ndc.x * .7 : 0);
+      // a pink light marks the ship from far away
+      this.beacon.position.copy(s.p);
+      this.beacon.scale.setScalar(dShip * .02);
+      this.beacon.material.opacity = .95 * smoother((dShip - 30) / 120) * smoother((f - 1.5) / 2);
+    } else this.beacon.visible = false;
 
     // captions
     for (let k = 0; k < this.caps.length; k++) {
@@ -517,7 +528,7 @@ export class SolarFlight {
     const dSun = cam.position.length();
     this.glows.forEach(([sp, k, min]) => sp.scale.setScalar(Math.max(min, dSun * k)));
     this.starMat.uniforms.uTime.value = f;
-    const orbitK = 1 - smoother((f - OVERVIEW - 1.5) / 2.5);
+    const orbitK = 1 - smoother((f - OVERVIEW + .6) / 2);
     this.orbits.forEach(o => (o.material.uniforms.uOpacity.value = orbitK * .9));
 
     // light on the ship comes from the sun
@@ -549,13 +560,20 @@ export class SolarFlight {
     this.streak.position.set(sx, sy, -d); this.streak.scale.set(d * 2.2, d * .035, 1); this.streak.material.opacity = fv * .32;
   }
 
+  /** hands the ship over (to the zoom down to your house): returns it with its current velocity */
+  releaseShip() {
+    this.released = true;
+    this.scene.remove(this.ship.group, this.ship.trail);
+    return { ship: this.ship, vel: this.shipVel.clone() };
+  }
+
   finish() {
     if (this.done) return;
     this.done = true;
     this.camera.remove(this.flare);
     this.camera.near = .1; this.camera.far = 600; this.camera.updateProjectionMatrix();
     if (this.captionsEl) this.captionsEl.classList.remove('in');
-    this.ship.dispose();
+    if (!this.released) { this.ship.dispose(); Sound.engineStop(); }
     this.scene.traverse(o => {
       if (o === this.earth.group || this.earth.group.getObjectById(o.id)) return;
       if (o.geometry) o.geometry.dispose();

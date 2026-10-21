@@ -272,6 +272,7 @@ class AudioEngine {
     const now = this.ctx.currentTime;
     this.cineMutedUntil = now + 30;
     this.wind(false);
+    this.engineStop(.3);
     this.mix();
   }
 
@@ -349,6 +350,86 @@ class AudioEngine {
       w.g.gain.cancelScheduledValues(now); w.g.gain.setValueAtTime(w.g.gain.value, now); w.g.gain.linearRampToValueAtTime(0, now + 1.2);
       w.src.stop(now + 1.3); w.lfo.stop(now + 1.3);
     }
+  }
+
+  /* ------------------------------------------------ our starship */
+  /** engine: a low roar, a jet hiss, a hum and a sci-fi whine; steered every frame with setEngine() */
+  engineStart() {
+    if (!this.ctx || this.eng) return;
+    const ctx = this.ctx, now = ctx.currentTime;
+    const out = ctx.createGain(); out.gain.value = 0;
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (pan) { out.connect(pan); pan.connect(this.cine); } else out.connect(this.cine);
+    const noise = rate => { const n = ctx.createBufferSource(); n.buffer = this.noiseBuf(); n.loop = true; n.playbackRate.value = rate; return n; };
+    const roar = noise(1), lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260; lp.Q.value = .7;
+    roar.connect(lp); lp.connect(out);
+    const hiss = noise(.73), bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1100; bp.Q.value = 1.3;
+    const hissG = ctx.createGain(); hissG.gain.value = .45;
+    hiss.connect(bp); bp.connect(hissG); hissG.connect(out);
+    const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(); o1.type = o2.type = 'sawtooth'; o1.frequency.value = 55; o2.frequency.value = 55.7;
+    const olp = ctx.createBiquadFilter(); olp.type = 'lowpass'; olp.frequency.value = 380;
+    const humG = ctx.createGain(); humG.gain.value = .16;
+    o1.connect(olp); o2.connect(olp); olp.connect(humG); humG.connect(out);
+    const whine = ctx.createOscillator(); whine.type = 'triangle'; whine.frequency.value = 760;
+    const vib = ctx.createOscillator(), vibG = ctx.createGain(); vib.frequency.value = 5.5; vibG.gain.value = 7; vib.connect(vibG); vibG.connect(whine.frequency);
+    const whineG = ctx.createGain(); whineG.gain.value = .045;
+    whine.connect(whineG); whineG.connect(out);
+    const srcs = [roar, hiss, o1, o2, whine, vib];
+    srcs.forEach(n => n.start(now));
+    this.eng = { out, pan, lp, bp, o1, o2, whine, srcs };
+  }
+
+  /** level 0..1 (loudness, e.g. how close the ship is), pitch 0..1 (speed / thrust), pan -1..1 */
+  setEngine(level, pitch = .5, pan = 0) {
+    const e = this.eng;
+    if (!e) return;
+    const now = this.ctx.currentTime, tc = .15;
+    e.out.gain.setTargetAtTime(.13 * Math.max(0, Math.min(1, level)), now, tc);
+    e.lp.frequency.setTargetAtTime(150 + 420 * pitch, now, tc);
+    e.bp.frequency.setTargetAtTime(650 + 1700 * pitch, now, tc);
+    e.o1.frequency.setTargetAtTime(40 + 44 * pitch, now, tc); e.o2.frequency.setTargetAtTime(40.6 + 44.8 * pitch, now, tc);
+    e.whine.frequency.setTargetAtTime(560 + 820 * pitch, now, tc);
+    if (e.pan) e.pan.pan.setTargetAtTime(Math.max(-1, Math.min(1, pan)), now, .2);
+  }
+
+  engineStop(fade = 1.2) {
+    const e = this.eng;
+    if (!e) return;
+    this.eng = null;
+    const now = this.ctx.currentTime;
+    e.out.gain.cancelScheduledValues(now); e.out.gain.setValueAtTime(e.out.gain.value, now); e.out.gain.linearRampToValueAtTime(0, now + fade);
+    e.srcs.forEach(n => { try { n.stop(now + fade + .05); } catch (err) { /* already stopped */ } });
+  }
+
+  /** something rushes past: a whoosh with a falling (Doppler) tone, panned from one side to the other */
+  flyby({ dur = 1.6, from = -.8, to = .8, vol = .14 } = {}) {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime + .02;
+    const n = ctx.createBufferSource(); n.buffer = this.noiseBuf(); n.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(2600, t + dur * .45); f.frequency.exponentialRampToValueAtTime(380, t + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + dur * .45); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(210, t); o.frequency.exponentialRampToValueAtTime(95, t + dur);
+    const ol = ctx.createBiquadFilter(); ol.type = 'lowpass'; ol.frequency.value = 900;
+    const og = ctx.createGain(); og.gain.setValueAtTime(.0001, t); og.gain.exponentialRampToValueAtTime(vol * .35, t + dur * .45); og.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    const end = pan || this.cine;
+    if (pan) { pan.pan.setValueAtTime(from, t); pan.pan.linearRampToValueAtTime(to, t + dur); pan.connect(this.cine); }
+    n.connect(f); f.connect(g); g.connect(end); g.connect(this.bigVerb);
+    o.connect(ol); ol.connect(og); og.connect(end);
+    n.start(t); n.stop(t + dur + .05); o.start(t); o.stop(t + dur + .05);
+  }
+
+  /** the ship sets down on the roof (a soft thump and a hiss) or lifts off again (spooling up) */
+  shipTouch(up = false) {
+    if (!this.ctx) return;
+    const ctx = this.ctx, t = ctx.currentTime + .02;
+    if (!up) this.boom(t, .22, this.cine, 70, .6);
+    const n = ctx.createBufferSource(); n.buffer = this.noiseBuf(); n.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 2200;
+    const g = ctx.createGain(); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.05, t + .05); g.gain.exponentialRampToValueAtTime(.0001, t + (up ? .5 : .9));
+    n.connect(f); f.connect(g); g.connect(this.cine); n.start(t); n.stop(t + 1);
+    if (up) this.sweep(t, 1.4, 180, 1400, .07);
   }
 
   /** the surprise party: poppers, party horns, applause, whistles and a few "woo!"s */

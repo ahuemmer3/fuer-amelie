@@ -329,7 +329,10 @@ body.overlay-open #toasts { top: auto; bottom: calc(var(--safe-b) + 14px); }
   text-shadow: 0 2px 10px rgba(10, 0, 20, .85), 0 0 18px rgba(255, 90, 170, .9), 0 0 50px rgba(255, 60, 150, .5); opacity: 0; }
 #cine.big { font: 400 clamp(3rem, 12vw, 5.6rem)/1.1 var(--script); }
 #cine.in { animation: cineIn var(--dur, 2.1s) ease forwards; }
-@keyframes cineIn { 0% { opacity: 0; transform: translateY(14px); filter: blur(8px); letter-spacing: .06em; } 18% { opacity: 1; transform: none; filter: none; letter-spacing: 0; } 84% { opacity: 1; } 100% { opacity: 0; transform: translateY(-8px); filter: blur(4px); } }
+/* quickly in, long and sharp on screen, quickly out (every value is set at each step, so nothing blurs while you read) */
+@keyframes cineIn { 0% { opacity: 0; transform: translateY(10px); filter: blur(5px); } 9% { opacity: 1; transform: none; filter: blur(0); } 90% { opacity: 1; transform: none; filter: blur(0); } 100% { opacity: 0; transform: translateY(-6px); filter: blur(2px); } }
+#cine::before { content: ""; position: absolute; left: 50%; top: 50%; z-index: -1; width: min(980px, 104vw); height: calc(100% + 54px); transform: translate(-50%, -50%);
+  background: radial-gradient(closest-side, rgba(14, 2, 22, .62), rgba(14, 2, 22, .38) 55%, rgba(14, 2, 22, 0)); pointer-events: none; }
 #skipBtn { position: fixed; right: calc(var(--safe-r) + 16px); bottom: calc(var(--safe-b) + 18px); z-index: 45; border: 1px solid var(--line); background: rgba(20, 6, 26, .45); color: var(--muted);
   font: 600 .78rem var(--sans); letter-spacing: .08em; padding: 10px 16px; border-radius: 999px; cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); animation: fadeIn 1s ease both; }
 #flash { position: fixed; inset: 0; z-index: 35; pointer-events: none; opacity: 0; background: radial-gradient(circle at 50% 45%, rgba(255, 235, 245, .95), rgba(255, 120, 190, .5) 40%, rgba(255, 79, 163, 0) 75%); }
