@@ -101,7 +101,7 @@ export const CONFIG = {
      MP3 in assets/music/ ablegen und hier eintragen. Er läuft dann direkt nach dem „Überraschung!“.
      Leer = stattdessen Happy Birthday + der eingebaute Song „Amelie“. */
   geburtstagsSong: {
-    datei: '',                       // z. B. './assets/music/alles-gute-amelie.mp3'
+    datei: './assets/music/taunusstrasse-2.m4a',
     titel: 'Alles Gute, Amelie',
     untertitel: 'Ein Song für dich · von Aaron'
   },
