@@ -1,28 +1,8 @@
 import * as THREE from 'three';
-import { clamp } from '../core/utils.js';
+import { clamp, mono, smoother } from '../core/utils.js';
 import { RM } from '../scene/earth.js';
 
-/** monotone cubic through [t, value] keys, flat at both ends (no overshoot) */
-function mono(keys) {
-  const n = keys.length, x = keys.map(k => k[0]), y = keys.map(k => k[1]);
-  const d = [], m = new Array(n).fill(0);
-  for (let i = 0; i < n - 1; i++) d[i] = (y[i + 1] - y[i]) / (x[i + 1] - x[i]);
-  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
-  for (let i = 0; i < n - 1; i++) {
-    if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; }
-    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
-    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
-  }
-  return t => {
-    if (t <= x[0]) return y[0];
-    if (t >= x[n - 1]) return y[n - 1];
-    let i = 0; while (t > x[i + 1]) i++;
-    const h = x[i + 1] - x[i], s = (t - x[i]) / h, s2 = s * s, s3 = s2 * s;
-    return (2 * s3 - 3 * s2 + 1) * y[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * y[i + 1] + (s3 - s2) * h * m[i + 1];
-  };
-}
 const smooth = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
-const smoother = k => { k = clamp(k, 0, 1); return k * k * k * (k * (k * 6 - 15) + 10); };
 const wrap = a => a - Math.PI * 2 * Math.floor((a + Math.PI) / (Math.PI * 2));
 
 const H1 = 2 * RM;          // altitude where the dive starts (the whole Earth in view)
@@ -59,19 +39,20 @@ export class HomeZoom {
     this.back = { pos: back.pos.clone(), target: back.target.clone() };
     this.dir0 = this.p0.clone().sub(this.c).normalize();
     this.d0 = this.p0.distanceTo(this.c);
-    this.d1 = e.radius * (1 + H1 / RM);
+    this.d1 = e.worldRadius() * (1 + H1 / RM);
     // turn the Earth so that home faces us, a little from above and in the light
-    const want = this.dir0.clone().add(new THREE.Vector3(0, .45, 0)).normalize();
+    const want = this.dir0.clone().add(new THREE.Vector3(0, .45, 0)).addScaledVector(e.light, .9).normalize();
     this.spin0 = e.spin;
     this.spin1 = this.spin0 + wrap(e.spinFacing(want) - this.spin0);
     if (this.geoEl) { this.geoEl.hidden = false; this.geoEl.classList.remove('out'); }
   }
 
-  caption(text, big = false) {
+  caption(text, dur = 3.8) {
     const el = this.captionsEl;
     if (!el || !text) return;
     el.classList.remove('in', 'big'); void el.offsetWidth;
-    el.textContent = text; el.classList.toggle('big', big); el.classList.add('in');
+    el.textContent = text; el.style.setProperty('--dur', dur + 's');
+    el.classList.toggle('big', text.includes('&')); el.classList.add('in');
   }
 
   /** places the camera from a pose in local metres (pos, heading psi, tilt alpha, distance rho) */
@@ -144,7 +125,7 @@ export class HomeZoom {
         this.psi0 = Math.atan2(ue.x, ue.y);
         this.psiF = this.psi0 + wrap(-.5 - this.psi0);
       }
-      this.hud(Math.max(0, (dist / e.radius - 1) * RM));
+      this.hud(Math.max(0, (dist / e.worldRadius() - 1) * RM));
       if (this.intro && this.fire('cap0')) this.caption(this.lines[0]);
       return null;
     }
@@ -179,6 +160,8 @@ export class HomeZoom {
       const s = t - A - D - H - U, k = smoother(s / B);
       if (this.fire('back')) {
         this.pose(this.psiF + H * .07 + .5, 0, H1); this.apply(H1);
+        this.c = e.center();
+        this.d1 = e.worldRadius() * (1 + H1 / RM);
         this.q1 = cam.quaternion.clone();
         this.dir1 = cam.position.clone().sub(this.c).normalize();
         this.dirH = this.back.pos.clone().sub(this.c).normalize();

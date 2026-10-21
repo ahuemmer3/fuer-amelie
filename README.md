@@ -2,10 +2,11 @@
 
 **Live:** <https://ahuemmer3.github.io/fuer-amelie/>
 
-Eine interaktive 3D-Webseite als Geschenk: Startkarte, ein Intro-Film durchs Sonnensystem,
-eine Galaxie mit der Erde in der Mitte und einem Partikelherz darüber, ein Zoom aus dem All bis
-auf euer Hausdach, kreisende Fotos, 5 aufwendige Spiele, Überraschungen und ein finaler
-Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
+Eine interaktive 3D-Webseite als Geschenk: Startkarte, ein Intro-Film (Blick von oben aufs
+Sonnensystem, dann fliegt ihr zwei als animierte Figuren im eigenen Raumschiff an Saturn, Jupiter
+und Mars vorbei zur Erde und zoomt bis auf euer Hausdach), eine Galaxie mit der Erde in der Mitte
+und einem Partikelherz darüber, kreisende Fotos, 5 aufwendige Spiele, Überraschungen und ein
+finaler Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
 
 ---
 
@@ -27,7 +28,7 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 | Initialen fürs Sternbild-Spiel | `initialen: ['A', 'A']` |
 | Startkarte (Titel, Untertitel, Datum, Button) | `karte` |
 | Großer Schriftzug (wechselt) | `titel` |
-| Texte im Intro-Film (Sonnensystem, Heimweg, Ankunft), Porträts | `intro.reise`, `intro.heimweg`, `intro.ankunft` |
+| Texte im Intro-Film (Flug, Sturzflug, Ankunft) | `intro.flug`, `intro.heimweg`, `intro.ankunft` |
 | Euer Zuhause: Koordinaten, Beschriftung, Ortsnamen beim Zoom | `zuhause` |
 | Geburtstagstorte (Kerzen, Wunsch) | `geburtstag` |
 | Farben | `farben` |
@@ -72,10 +73,11 @@ dem Tippen auf „Öffnen“, denn Browser erlauben keinen automatischen Ton.
 
 ### Euer Zuhause (Zoom von der Erde bis aufs Dach)
 
-Am Ende des Intro-Films taucht die Kamera in die Erde in der Mitte der Galaxie und zoomt
-über Europa, Deutschland und die Fränkische Schweiz bis auf euer Dach in Püttlach. Dort fällt
-ein Herz-Pin mit „Unser Zuhause“ auf das Haus, das leuchtend umrandet ist. Danach geht es
-zurück ins All und die Party beginnt. Später startet ein Tipp auf die Erde den Zoom noch einmal.
+Am Ende des Intro-Films fliegt euer Raumschiff zur Erde, dann zoomt die Kamera über Europa,
+Deutschland und die Fränkische Schweiz bis auf euer Dach in Püttlach. Dort fällt ein Herz-Pin mit
+„Unser Zuhause“ auf das Haus, das leuchtend umrandet ist. Danach geht es hoch hinaus, direkt in
+eure Galaxie, und die Party beginnt. Später startet ein Tipp auf die Erde in der Mitte den Zoom
+noch einmal.
 
 - Koordinaten, Beschriftung, Hausumriss und Ortsnamen stehen in `config.js` bei `zuhause`.
 - Die Luftbilder liegen in `assets/zoom/` (9 Stufen, zusammen ca. 1,8 MB) und sind genau für
@@ -210,7 +212,7 @@ css/style.css         Gestaltung (Glas, Glow, Spiele)
 js/main.js            Ablauf, Kamera, Eingaben, Planeten
 js/core/              Renderer + Post-Processing, Qualität, Audio, Fortschritt
 js/scene/             Galaxie, Erde (Shader mit Zoom bis aufs Dach), Herz, Ringe, Fotos, Planeten, Feuerwerk …
-js/intro/             Karte → Partikel, Flug durchs Sonnensystem, Warp, Galaxie-Anflug, Zoom zum Haus
+js/intro/             Karte → Partikel, Flug durchs Sonnensystem, Raumschiff mit euch beiden, Zoom zum Haus
 js/ui/                Overlay, Foto-Karte, Hinweise, Konfetti
 js/games/             ein Modul pro Spiel
 js/pages/             Zähler, Zeitstrahl, Gründe, Liebesbrief
@@ -225,9 +227,10 @@ Partikel, EffectComposer mit UnrealBloom, ACES-Tonemapping, Vignette und Filmkor
 
 ## Credits
 
-- Planetentexturen und Milchstraße: [Solar System Scope](https://www.solarsystemscope.com/textures/), Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Planetentexturen (auch die fiktive Eris) und Milchstraße: [Solar System Scope](https://www.solarsystemscope.com/textures/), Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - Luftbilder Dorf bis Hausdach: [Bayerische Vermessungsverwaltung](https://geodaten.bayern.de), Digitale Orthophotos 20 cm, Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 - Satellitenbilder Europa bis Ortsgegend: [EOxCloudless 2024](https://cloudless.eox.at) von EOX IT Services GmbH, enthält modifizierte Copernicus-Sentinel-Daten 2024, Lizenz [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) (die Ausschnitte in `assets/zoom/z1–z5` stehen unter derselben Lizenz)
 - Hausumriss: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
 - 3D: [three.js](https://threejs.org) (MIT)
+- Das Raumschiff und die beiden Figuren sind ein eigener Entwurf (Star-Wars-Stil, keine Kopie), komplett im Code gebaut.
 - Alle Musikstücke (Intro, Spielmusik, der Song „Amelie“) sind eigene Kompositionen, die live im Browser erzeugt werden. „Happy Birthday to You“ ist gemeinfrei.

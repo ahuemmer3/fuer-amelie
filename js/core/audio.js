@@ -215,17 +215,13 @@ class AudioEngine {
   }
 
   /* ------------------------------------------------ intro: from the wormhole down to your house and into the party */
-  /** times in seconds from now: portraits reach the heart, dive into the Earth, touchdown on the roof, back up, arrival */
-  homecoming({ portraits = 6.2, dive = 6.75, touch = 16, up = 18.8, arrive = 22.9 } = {}) {
+  /** times in seconds from now (the dive starts now): touchdown on the roof, back up, arrival */
+  homecoming({ dive = 0, touch = 9.3, up = 12.1, arrive = 16.1 } = {}) {
     if (!this.ctx) return;
     const t0 = this.ctx.currentTime + .05, out = this.cine, verb = this.bigVerb;
-    // out of the wormhole: deep boom, warm strings that slowly open up
-    this.boom(t0, .9, out, 40, 3.2); this.boom(t0, .4, verb, 40, 3.2);
-    this.strings(t0, dive + 1.2, [38, 50, 57, 62, 66, 69, 74], 260, 2400, .15);
-    [81, 86, 90, 93].forEach((n, i) => this.bell(midi(n), t0 + portraits + i * .11, .07, out));
     // the dive: a long falling whoosh, strings rising towards home, a heartbeat that gets faster
     this.sweep(t0 + dive, touch - dive + .4, 3200, 240, .1);
-    this.strings(t0 + dive - .3, touch - dive + 3, [43, 55, 59, 62, 66, 69, 71], 300, 3400, .16);
+    this.strings(t0 + Math.max(0, dive - .3), touch - dive + 3, [43, 55, 59, 62, 66, 69, 71], 300, 3400, .16);
     for (let x = dive + .6, k = 0; x < touch - .25; k++) { this.boom(t0 + x, .16 + .03 * Math.min(k, 6), out, 58, .45); x += Math.max(.42, 1.05 - k * .07); }
     // touchdown on the roof: a warm chord and a music box
     this.boom(t0 + touch, .35, verb, 45, 2.4);

@@ -196,29 +196,62 @@ export function buildHappyBirthday(S) {
   return { title: 'Happy Birthday', events, lyrics, duration: endT + 2.5 };
 }
 
-/* ------------------------------------------------------------------ space odyssey theme (20 s, original) */
-export function buildOdysseyTheme(S) {
+/* ------------------------------------------------------------------ flight theme (37 s, original) */
+/**
+ * Music for the flight through the solar system:
+ * 0–9.6 the solar system from above (organ, bells, the clock ticking) · 9.6–12.6 the camera dives to
+ * the ship (swell) · 12.6 launch · 12.6–31.8 the flight with a heroic tune · 31.8–36.6 towards the Earth.
+ */
+export function buildFlightTheme(S) {
   const band = createBand(S), bus = S.cine, verb = S.bigVerb;
-  const bar = 2.5, e8 = bar / 8, events = [], ev = (t, fn) => events.push({ t, fn });
-  const names = ['Am', 'F', 'C', 'G', 'Am', 'F', 'Dm', 'E'];
-  names.forEach((nm, i) => {
-    const c = chord(nm), t0 = i * bar, k = i / (names.length - 1);
-    const v = c.voice;
-    // low pedal
-    ev(t0, at => band.organ(at, 24 + c.root + (c.root > 7 ? 0 : 12), bar, { bus, verb, vel: .02 + .025 * k, bright: .2 }));
-    // pulsing ostinato in eighths
-    const pat = [v[0], v[1], v[2], v[0] + 12, v[2], v[1], v[0] + 12, v[1] + 12];
-    pat.forEach((n, s) => ev(t0 + s * e8, at => band.organ(at, n, e8 * 1.05, { bus, verb, vel: .016 + .022 * k, bright: .25 + .6 * k })));
-    // sustained high chords and a choir from the middle on
-    if (i >= 3) ev(t0, at => band.organ(at + .02, v[0] + 24, bar, { bus, verb, vel: .008 + .012 * k, bright: .9 }));
-    if (i >= 4) ev(t0, at => band.strings(at, v.map(n => n + 12), bar, { bus, verb, vel: .01 + .014 * k, attack: .6, cutoff: 2200 }));
-    if (i >= 5) ev(t0, at => band.timp(at, 33 + (c.root > 7 ? c.root - 12 : c.root), { bus, verb, vel: .25 + .25 * k }));
-    if (i === 6) [4, 6].forEach(s => ev(t0 + s * e8, at => band.timp(at, 33, { bus, verb, vel: .2 })));
-    if (i === 7) for (let s = 0; s < 16; s++) ev(t0 + s * bar / 16, at => band.timp(at, 33, { bus, verb, vel: .08 + s * .03 }));
+  const bar = 2.4, events = [], ev = (t, fn) => events.push({ t, fn });
+  const pedal = c => 24 + c.root + (c.root > 7 ? 0 : 12);
+  // 1 · from above: soft organ chords, twinkling bells
+  ['Am', 'F', 'C', 'G'].forEach((nm, i) => {
+    const c = chord(nm), t0 = i * bar, k = i / 3;
+    ev(t0, at => band.organ(at, pedal(c), bar + .2, { bus, verb, vel: .016 + .01 * k, bright: .15 }));
+    c.voice.forEach((n, j) => ev(t0 + j * .05, at => band.organ(at, n + 12, bar + .3, { bus, verb, vel: .006 + .006 * k, bright: .4 })));
+    [0, 3, 5, 6].forEach((s, j) => ev(t0 + s * bar / 8, at => band.bell(at, c.voice[j % 3] + 24 + (j === 3 ? 12 : 0), { bus, verb, vel: .03 + .015 * k })));
   });
-  // the clock keeps ticking
-  for (let t = 0; t < 18.8; t += 1.25) ev(t, at => band.tick(at, { bus, vel: .06 }));
-  ev(17.6, at => band.swell(at, 1.9, { bus, verb, vel: .16 }));
+  for (let t = 2.4; t < 12.6; t += 1.2) ev(t, at => band.tick(at, { bus, vel: .05 }));
+  // 2 · down to the ship: tension and a swell into the launch
+  const E = chord('E');
+  ev(9.6, at => band.organ(at, pedal(E), 3.1, { bus, verb, vel: .03, bright: .3 }));
+  ev(9.6, at => band.strings(at, E.voice.map(n => n + 12), 3, { bus, verb, vel: .016, attack: 1.2, cutoff: 2000 }));
+  ev(10.3, at => band.swell(at, 2.3, { bus, verb, vel: .16 }));
+  for (let k = 0; k < 10; k++) ev(11.6 + k * .1, at => band.timp(at, 33, { bus, verb, vel: .06 + k * .03 }));
+  // 3 · launch!
+  const A = chord('Am');
+  ev(12.6, at => band.timp(at, 33, { bus, verb, vel: .7 }));
+  ev(12.6, at => band.brass(at, A.voice.map(n => n + 12), 1.6, { bus, verb, vel: .07 }));
+  ev(12.6, at => band.crash(at, { bus, verb, vel: .12 }));
+  // 4 · the flight: organ ostinato, strings, a heroic tune on top
+  const names = ['Am', 'F', 'C', 'G', 'Am', 'F', 'Dm', 'E'];
+  const tune = [[[69, 2], [72, 1], [76, 1]], [[77, 3], [76, 1]], [[76, 2], [74, 1], [72, 1]], [[74, 4]],
+    [[69, 2], [72, 1], [76, 1]], [[81, 3], [79, 1]], [[77, 2], [76, 1], [74, 1]], [[76, 2], [68, 2]]];
+  const beat = bar / 4, e8 = bar / 8;
+  names.forEach((nm, i) => {
+    const c = chord(nm), t0 = 12.6 + i * bar, k = i / (names.length - 1), v = c.voice;
+    ev(t0, at => band.organ(at, pedal(c), bar, { bus, verb, vel: .022 + .02 * k, bright: .2 }));
+    const pat = [v[0], v[1], v[2], v[0] + 12, v[2], v[1], v[0] + 12, v[1] + 12];
+    pat.forEach((n, j) => ev(t0 + j * e8, at => band.organ(at, n, e8 * 1.05, { bus, verb, vel: .014 + .016 * k, bright: .3 + .5 * k })));
+    if (i >= 1) ev(t0, at => band.strings(at, v.map(n => n + 12), bar, { bus, verb, vel: .011 + .012 * k, attack: .5, cutoff: 2400 }));
+    if (i >= 2) ev(t0 + .02, at => band.organ(at, v[0] + 24, bar, { bus, verb, vel: .006 + .01 * k, bright: .9 }));
+    if (i >= 3) [0, 2].forEach(bt => ev(t0 + bt * beat, at => band.timp(at, 33 + (c.root > 7 ? c.root - 12 : c.root), { bus, verb, vel: .2 + .2 * k })));
+    let x = 0;
+    tune[i].forEach(([n, len]) => { const st = t0 + x * beat; ev(st, at => band.lead(at, n, len * beat - .04, { bus, verb, vel: .05 + .03 * k, wet: .45 })); x += len; });
+    if (i === 7) for (let j = 0; j < 16; j++) ev(t0 + j * bar / 16, at => band.timp(at, 33, { bus, verb, vel: .06 + j * .025 }));
+  });
+  // 5 · towards the Earth: it opens up, then the dive takes over
+  [['F', [[69, 2], [72, 2]]], ['G', [[74, 4]]]].forEach(([nm, mel], i) => {
+    const c = chord(nm), t0 = 31.8 + i * bar;
+    ev(t0, at => band.organ(at, pedal(c), bar + .3, { bus, verb, vel: .04, bright: .35 }));
+    ev(t0, at => band.strings(at, c.voice.map(n => n + 12), bar + .3, { bus, verb, vel: .026, attack: .4, cutoff: 3000 }));
+    ev(t0 + .02, at => band.organ(at, c.voice[0] + 24, bar, { bus, verb, vel: .016, bright: .9 }));
+    let x = 0;
+    mel.forEach(([n, len]) => { const st = t0 + x * beat; ev(st, at => band.lead(at, n, len * beat - .04, { bus, verb, vel: .08, wet: .5 })); x += len; });
+  });
+  ev(34.6, at => band.swell(at, 2, { bus, verb, vel: .18 }));
   events.sort((a, b) => a.t - b.t);
-  return { events, duration: 20 };
+  return { events, duration: 37 };
 }

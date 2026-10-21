@@ -5,34 +5,6 @@ import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
-const LensShader = {
-  uniforms: {
-    tDiffuse: { value: null },
-    uCenter: { value: new THREE.Vector2(.5, .5) },
-    uRadius: { value: .05 },
-    uStrength: { value: 0 },
-    uAspect: { value: 1 }
-  },
-  vertexShader: /* glsl */`
-    varying vec2 vUv;
-    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-  fragmentShader: /* glsl */`
-    uniform sampler2D tDiffuse;
-    uniform vec2 uCenter;
-    uniform float uRadius, uStrength, uAspect;
-    varying vec2 vUv;
-    void main() {
-      vec2 d = vUv - uCenter;
-      d.x *= uAspect;
-      float r = length(d);
-      float fall = smoothstep(uRadius * 9.0, uRadius * 1.6, r);
-      float def = uStrength * uRadius * uRadius / max(r, 1e-4) * fall * smoothstep(uRadius * 0.85, uRadius * 1.15, r);
-      vec2 off = (d / max(r, 1e-4)) * def;
-      off.x /= uAspect;
-      gl_FragColor = texture2D(tDiffuse, vUv - off);
-    }`
-};
-
 const FilmShader = {
   uniforms: {
     tDiffuse: { value: null },
@@ -41,7 +13,9 @@ const FilmShader = {
     uVignette: { value: .55 },
     uRes: { value: new THREE.Vector2(1, 1) }
   },
-  vertexShader: LensShader.vertexShader,
+  vertexShader: /* glsl */`
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
   fragmentShader: /* glsl */`
     uniform sampler2D tDiffuse;
     uniform float uTime, uGrain, uVignette;
@@ -79,9 +53,6 @@ export function createRenderer(canvas, quality) {
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
-  const lens = new ShaderPass(LensShader);
-  composer.addPass(lens);
-
   let bloomScale = quality.bloomScale;
   const bloom = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), .85, .5, .42);
   const baseSetSize = bloom.setSize.bind(bloom);
@@ -102,31 +73,16 @@ export function createRenderer(canvas, quality) {
     renderer.setSize(w, hgt, false);
     composer.setPixelRatio(dpr);
     composer.setSize(w, hgt);
-    lens.uniforms.uAspect.value = w / hgt;
     film.uniforms.uRes.value.set(w * dpr, hgt * dpr);
   }
   resize();
 
-  const tmp = new THREE.Vector3(), right = new THREE.Vector3();
-  /** Projects the wormhole into screen space for the lensing pass */
-  function updateLens(worldPos, worldRadius, strength) {
-    lens.enabled = strength > 0;
-    tmp.copy(worldPos).project(camera);
-    const behind = tmp.z > 1;
-    lens.uniforms.uCenter.value.set(tmp.x * .5 + .5, tmp.y * .5 + .5);
-    right.setFromMatrixColumn(camera.matrixWorld, 0).multiplyScalar(worldRadius).add(worldPos).project(camera);
-    const rad = Math.abs(right.x - tmp.x) * .5 * (window.innerWidth / window.innerHeight);
-    lens.uniforms.uRadius.value = rad;
-    lens.uniforms.uStrength.value = behind ? 0 : strength;
-  }
-
   return {
-    renderer, scene, camera, composer, bloom, lens, film,
+    renderer, scene, camera, composer, bloom, film,
     resize,
-    updateLens,
     render(time) { film.uniforms.uTime.value = time; composer.render(); },
     setPixelRatio(v) { dpr = v; resize(); },
-    /** render a different scene (the fairy-tale sky during the intro) */
+    /** render a different scene (the solar system during the intro) */
     setScene(s) { renderPass.scene = s; },
     get pixelRatio() { return dpr; },
     setBloomScale(v) { bloomScale = v; composer.setSize(window.innerWidth, window.innerHeight); }

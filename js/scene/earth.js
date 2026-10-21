@@ -242,6 +242,16 @@ export class Earth {
   }
 
   setOpacity(o) { this.uniforms.uOpacity.value = o; this.shell.visible = this.depth.visible = o > .002 && this.mode === 'mesh'; }
+
+  /** moves the Earth into another scene (solar system ↔ galaxy) */
+  setParent(parent, { position, scale = 1, quadScene } = {}) {
+    parent.add(this.group);
+    if (position) this.group.position.copy(position);
+    this.group.scale.setScalar(scale);
+    if (quadScene) quadScene.add(this.screenQuad);
+    this.computeFrames();
+  }
+  worldRadius() { return this.radius * this.group.scale.x; }
   setZoomTexture(i, tex) { this.uniforms['uZ' + i].value = tex; }
 
   /** world ↔ local (east/north/up, metres from home), from the current transforms */

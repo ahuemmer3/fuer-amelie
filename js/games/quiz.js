@@ -7,7 +7,7 @@ export const title = 'Wie gut kennst du uns?';
 export default function render(body, api) {
   const Q = api.config.quiz;
   const results = [...api.config.quizErgebnisse].sort((a, b) => b.ab - a.ab);
-  const avatar = thumbUrl(((api.config.intro || {}).portraits || [])[0] || api.config.memoryFotos[0]);
+  const avatar = thumbUrl(api.config.quizBild || api.config.memoryFotos[0]);
   const root = h('div', { class: 'qz' });
   const fxCanvas = h('canvas', { class: 'qz-fx' });
   body.append(root, fxCanvas);

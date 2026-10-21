@@ -36,23 +36,25 @@ export const CONFIG = {
   titel: ['Happy Birthday, Amelie', 'Ich liebe dich', 'Meine Lieblings-Nervensäge'],
 
   /* ---------- Intro-Film: Texte ----------
-     reise   = 6 Zeilen beim Flug durchs Sonnensystem: Erde, Mond, Mars, Jupiter, Saturn, Wurmloch
-               (eine Zeile mit „&“ wird groß angezeigt)
-     heimweg = 2 Zeilen: beim Flug durch eure Galaxie, dann beim Sturzflug auf die Erde zu eurem Haus
-     ankunft = Zeile beim Rückflug in die Galaxie, kurz vor der Party
-     Die zwei Porträts liegen in assets/photos/thumbs/ (portrait-aaron.webp, portrait-amelie.webp) */
+     Der Film: Blick von oben aufs Sonnensystem, dann kommt euer Raumschiff von außen herein und fliegt
+     an Saturn, Jupiter und Mars vorbei zur Erde, dann geht es runter bis auf euer Dach.
+     flug    = 8 Zeilen, jede steht gut 4 Sekunden (in dieser Reihenfolge, siehe Kommentare).
+               Eine Zeile mit „&“ wird groß angezeigt, \n macht einen Zeilenumbruch.
+     heimweg = Zeile beim Sturzflug zu eurem Haus (danach erscheint „Unser Zuhause“)
+     ankunft = Zeile beim Rückflug ins All, kurz vor der Party */
   intro: {
-    reise: [
-      'Irgendwo auf diesem kleinen blauen Planeten …',
-      '… sind ein Mädchen und ein Junge zusammen aufgewachsen.',
-      'Sie kannten sich ihr ganzes Leben lang …',
-      '… und haben sich trotzdem erst viel später richtig gefunden.',
-      'Am 24. Dezember 2025 hat es endlich Klick gemacht.',
-      'Amelie & Aaron'
+    flug: [
+      'Acht Planeten. Eine Sonne. Und drumherum Milliarden Sterne …',                     // Sonnensystem von oben
+      '… aber nur auf einem davon lebt der wichtigste Mensch in meinem Leben.',            // Sonnensystem von oben
+      'Steig ein, Amelie. Ich will dir was zeigen.',                                        // das Raumschiff wartet
+      'Amelie & Aaron',                                                                     // Blick ins Cockpit
+      'Ich würde dir die Ringe vom Saturn schenken …\n… aber du würdest nur fragen, ob man die essen kann.',   // Saturn
+      'Wir kennen uns, seit wir Kinder waren.\nWir sind zusammen aufgewachsen …',          // Jupiter
+      '… und haben uns trotzdem erst viel später richtig gefunden.',                       // Asteroiden und Mars
+      'An Heiligabend 2025 hat es endlich Klick gemacht.\nMein schönstes Weihnachtsgeschenk: du.'   // Anflug auf die Erde
     ],
-    heimweg: ['Egal, wie weit ich fliege …', '… am Ende lande ich immer wieder bei dir.'],
-    ankunft: ['Und heute ist dein Tag.'],
-    portraits: ['portrait-aaron.webp', 'portrait-amelie.webp']
+    heimweg: ['Und egal, wie weit wir fliegen …'],
+    ankunft: ['Und heute ist dein Tag.']
   },
 
   /* ---------- Euer Zuhause: der Zoom von der Erde bis auf euer Dach ----------
@@ -147,6 +149,8 @@ export const CONFIG = {
     belohnung: 'Gutschein: Ein Essen deiner Wahl. Ich zahle. Und du darfst sogar von meinem Teller essen.'
   },
 
+  quizBild: 'portrait-aaron.webp',   // kleines Bild von dir neben den Quizfragen (aus assets/photos/thumbs/)
+
   // richtig = Nummer der richtigen Antwort (0 = erste, 1 = zweite, ...)
   quiz: [
     { frage: 'Seit wann kennen wir uns?', antworten: ['Seit dem Sandkasten', 'Seit einer Party', 'Seit letztem Jahr', 'Seit Tinder'], richtig: 0, kommentar: 'Wir kennen uns unser ganzes Leben. Gefunden haben wir uns trotzdem erst später.' },
@@ -162,11 +166,13 @@ export const CONFIG = {
     { ab: 6, text: 'Volle Punktzahl! Du kennst uns besser als jeder andere Mensch im Universum.' }
   ],
 
-  rubbellos: [
-    'Ein Essen deiner Wahl (ich zahle)',
+  rubbellos: [                       // einer davon wird gezogen (nur Sachen, die nichts kosten)
     'Eine Massage, so lange du willst',
     '30 Minuten Jammern, ohne dass ich widerspreche',
-    'Frühstück ans Bett'
+    'Einen Tag lang bestimmst du alles (auch die Fernbedienung)',
+    'Eine Woche lang mache ich den Abwasch',
+    'Ein Kuschelabend auf dem Sofa, du suchst den Film aus',
+    '10 Küsse, einlösbar, wann immer du willst'
   ],
 
   gluecksrad: [

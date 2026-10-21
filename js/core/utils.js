@@ -107,3 +107,24 @@ export function heartPath2D(ctx, x, y, s) {
 
 export const isTouch = () => matchMedia('(pointer: coarse)').matches;
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** monotone cubic through [t, value] keys, flat at both ends (no overshoot) */
+export function mono(keys) {
+  const n = keys.length, x = keys.map(k => k[0]), y = keys.map(k => k[1]);
+  const d = [], m = new Array(n).fill(0);
+  for (let i = 0; i < n - 1; i++) d[i] = (y[i + 1] - y[i]) / (x[i + 1] - x[i]);
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; }
+    const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b;
+    if (s > 9) { const k = 3 / Math.sqrt(s); m[i] = k * a * d[i]; m[i + 1] = k * b * d[i]; }
+  }
+  return t => {
+    if (t <= x[0]) return y[0];
+    if (t >= x[n - 1]) return y[n - 1];
+    let i = 0; while (t > x[i + 1]) i++;
+    const h = x[i + 1] - x[i], s = (t - x[i]) / h, s2 = s * s, s3 = s2 * s;
+    return (2 * s3 - 3 * s2 + 1) * y[i] + (s3 - 2 * s2 + s) * h * m[i] + (-2 * s3 + 3 * s2) * y[i + 1] + (s3 - s2) * h * m[i + 1];
+  };
+}
+export const smoother = k => { k = clamp(k, 0, 1); return k * k * k * (k * (k * 6 - 15) + 10); };

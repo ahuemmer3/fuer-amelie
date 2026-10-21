@@ -82,13 +82,13 @@ const scenarios = {
           await page.waitForFunction(x => window.__galaxy.introT() >= x || window.__galaxy.phase() === 'main', sec, { timeout: 60000 });
           await shot(label);
         };
-        await at(.6, '02-dissolve'); await at(3, '03-earth'); await at(12, '04-jupiter'); await at(19.4, '05-wormhole'); await at(22.5, '06-galaxy');
-        await at(27, '07-heart'); await at(30, '08-dive'); await at(32.2, '09-europe'); await at(35.8, '10-puettlach'); await at(38.6, '11-home');
-        await at(42.4, '12-back');
-        await waitPhase(page, 'main', 90000); await page.waitForTimeout(700); await shot('13-party');
-        await page.waitForTimeout(5000); await shot('14-happy-birthday');
+        await at(.6, '02-dissolve'); await at(3, '03-sonnensystem'); await at(11.5, '04-zum-schiff'); await at(14.2, '05-start'); await at(16.6, '06-cockpit');
+        await at(21.2, '07-saturn'); await at(26.4, '08-jupiter'); await at(32.2, '09-mars'); await at(36.6, '10-erde'); await at(41, '11-europa');
+        await at(46.8, '12-zuhause'); await at(52.4, '13-galaxie');
+        await waitPhase(page, 'main', 90000); await page.waitForTimeout(700); await shot('14-party');
+        await page.waitForTimeout(5000); await shot('15-happy-birthday');
         await page.waitForFunction(() => ['»Amelie«', 'Alles Gute, Amelie'].includes((document.querySelector('.kar-title') || {}).textContent), null, { timeout: 40000 });
-        await page.waitForTimeout(2500); await shot('15-song');
+        await page.waitForTimeout(2500); await shot('16-song');
         console.log('  Song-Titel: ' + await page.$eval('.kar-title', e => e.textContent));
         const playing = await page.evaluate(() => !document.getElementById('karaoke').hidden);
         console.log(`  Karaoke sichtbar: ${playing ? 'ja' : 'nein'}`);
@@ -112,11 +112,13 @@ const scenarios = {
       });
     }
   },
-  async odyssey() {
-    await session('od-' + (process.argv[3] || 'desktop'), { device: process.argv[3] || 'desktop', query: '?q=high' }, async (page, shot) => {
+  /** the flight through the solar system with the starship */
+  async flug() {
+    await session('flug-' + (process.argv[3] || 'desktop'), { device: process.argv[3] || 'desktop', query: '?q=high' }, async (page, shot) => {
       await page.waitForSelector('#intro:not([hidden])'); await page.waitForTimeout(800);
       await page.click('#openBtn');
-      for (const [sec, label] of [[1.8, 'a-earth'], [3.8, 'b'], [6.0, 'c-moon'], [8.6, 'd-mars'], [12.2, 'e-jupiter'], [15.6, 'f-saturn'], [16.4, 'g-rings'], [19.2, 'h-wormhole'], [20.6, 'i-worm2'], [23.5, 'j-galaxy']]) {
+      for (const [sec, label] of [[2, 'a-oben'], [7, 'b-oben'], [11.5, 'c-sturz'], [14.2, 'd-start'], [16.2, 'e-cockpit'], [17.4, 'f-cockpit'], [21.2, 'g-saturn'],
+        [26.4, 'h-jupiter'], [29.6, 'i-asteroiden'], [32.2, 'j-mars'], [35.2, 'k-mond'], [37, 'l-erde']]) {
         await page.waitForFunction(x => window.__galaxy.introT() >= x, sec, { timeout: 60000 }); await shot(label);
       }
     });
