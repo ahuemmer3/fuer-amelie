@@ -1,7 +1,7 @@
 /**
  * Everything audible, generated with Web Audio (no files needed):
  *  - ambient score (or an MP3 from config) in the galaxy
- *  - an epic cinematic swell for the intro journey
+ *  - cinematic music for the intro (through the galaxy, down to your house, into the party)
  *  - an epic driving track that plays only in "Herzen fangen"
  *  - "Happy Birthday" (public domain melody) for the cake
  *  - small sound effects
@@ -214,32 +214,60 @@ class AudioEngine {
     f.connect(g); g.connect(out);
   }
 
-  /* ------------------------------------------------ intro: epic cinematic swell (~12 s) */
-  cinematic(arrive = 11.1) {
+  /* ------------------------------------------------ intro: from the wormhole down to your house and into the party */
+  /** times in seconds from now: portraits reach the heart, dive into the Earth, touchdown on the roof, back up, arrival */
+  homecoming({ portraits = 6.2, dive = 6.75, touch = 16, up = 18.8, arrive = 22.9 } = {}) {
     if (!this.ctx) return;
-    const ctx = this.ctx, t0 = ctx.currentTime + .05, out = this.cine, s = arrive / 11.1;
-    const verb = this.bigVerb;
+    const t0 = this.ctx.currentTime + .05, out = this.cine, verb = this.bigVerb;
+    // out of the wormhole: deep boom, warm strings that slowly open up
     this.boom(t0, .9, out, 40, 3.2); this.boom(t0, .4, verb, 40, 3.2);
-    // rising strings: D minor add9 → opens up
-    const voices = [38, 50, 57, 62, 64, 65, 69];
-    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(260, t0); f.frequency.exponentialRampToValueAtTime(5200, t0 + 10.5 * s); f.Q.value = 1.2;
-    const g = ctx.createGain(); g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.18, t0 + 4 * s); g.gain.linearRampToValueAtTime(.32, t0 + arrive - .5); g.gain.linearRampToValueAtTime(0, t0 + arrive + .1);
-    voices.forEach((n, i) => [-10, 0, 10].forEach(det => {
-      const o = ctx.createOscillator(); o.type = i < 2 ? 'triangle' : 'sawtooth'; o.frequency.value = midi(n); o.detune.value = det + Math.random() * 4;
-      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5 + Math.random(); lg.gain.value = 6; lfo.connect(lg); lg.connect(o.detune);
-      const og = ctx.createGain(); og.gain.value = .14;
-      o.connect(og); og.connect(f); o.start(t0); lfo.start(t0); o.stop(t0 + arrive + .3); lfo.stop(t0 + arrive + .3);
-    }));
-    f.connect(g); g.connect(out); g.connect(verb);
-    // timpani hits and a roll into the arrival
-    [2.6, 5.2, 7.4, 8.6].forEach((x, i) => this.boom(t0 + x * s, .35 + i * .12, out, 55, 1.4));
-    for (let k = 0; k < 16; k++) this.boom(t0 + arrive - 1.7 + k * .1, .08 + k * .03, out, 60, .3);
+    this.strings(t0, dive + 1.2, [38, 50, 57, 62, 66, 69, 74], 260, 2400, .15);
+    [81, 86, 90, 93].forEach((n, i) => this.bell(midi(n), t0 + portraits + i * .11, .07, out));
+    // the dive: a long falling whoosh, strings rising towards home, a heartbeat that gets faster
+    this.sweep(t0 + dive, touch - dive + .4, 3200, 240, .1);
+    this.strings(t0 + dive - .3, touch - dive + 3, [43, 55, 59, 62, 66, 69, 71], 300, 3400, .16);
+    for (let x = dive + .6, k = 0; x < touch - .25; k++) { this.boom(t0 + x, .16 + .03 * Math.min(k, 6), out, 58, .45); x += Math.max(.42, 1.05 - k * .07); }
+    // touchdown on the roof: a warm chord and a music box
+    this.boom(t0 + touch, .35, verb, 45, 2.4);
+    [55, 59, 62, 67].forEach((n, i) => this.pad(midi(n), t0 + touch + i * .03, up - touch + 1.8, .04, verb, out));
+    [79, 83, 86, 91, 95, 91, 86, 83].forEach((n, i) => this.bell(midi(n), t0 + touch + .05 + i * .16, .085 - i * .004, out));
+    // back up: a rising whoosh and a timpani roll into the arrival
+    this.sweep(t0 + up, arrive - up, 220, 3600, .1);
+    this.strings(t0 + up - .2, arrive - up + .4, [38, 50, 57, 62, 64, 69, 76], 400, 5200, .2);
+    for (let k = 0; k < 18; k++) this.boom(t0 + arrive - 1.8 + k * .1, .07 + k * .028, out, 60, .3);
     // arrival: big hit + bright D major chord + bells
     const ta = t0 + arrive;
     this.boom(ta, 1, out, 38, 3.5); this.boom(ta, .5, verb, 38, 3.5);
     this.brass([50, 54, 57, 62, 66], ta, 3.2, .16, out, 3200);
     this.brass([50, 54, 57, 62, 66], ta, 3.2, .1, verb, 3200);
     [74, 78, 81, 86, 90].forEach((n, i) => this.bell(midi(n), ta + .15 + i * .09, .1, out));
+  }
+
+  /** detuned string section whose low-pass slowly opens */
+  strings(t, dur, notes, f0, f1, vol) {
+    const ctx = this.ctx;
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 1.1;
+    f.frequency.setValueAtTime(f0, t); f.frequency.exponentialRampToValueAtTime(f1, t + dur * .9);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol * .6, t + Math.min(2.5, dur * .3));
+    g.gain.linearRampToValueAtTime(vol, t + dur - .6); g.gain.linearRampToValueAtTime(0, t + dur);
+    notes.forEach((n, i) => [-10, 0, 10].forEach(det => {
+      const o = ctx.createOscillator(); o.type = i < 2 ? 'triangle' : 'sawtooth'; o.frequency.value = midi(n); o.detune.value = det + Math.random() * 4;
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5 + Math.random(); lg.gain.value = 6; lfo.connect(lg); lg.connect(o.detune);
+      const og = ctx.createGain(); og.gain.value = .14;
+      o.connect(og); og.connect(f); o.start(t); lfo.start(t); o.stop(t + dur + .1); lfo.stop(t + dur + .1);
+    }));
+    f.connect(g); g.connect(this.cine); g.connect(this.bigVerb);
+  }
+
+  /** band-passed noise gliding between two frequencies (whoosh) */
+  sweep(t, dur, fa, fb, vol) {
+    const ctx = this.ctx, n = ctx.createBufferSource(); n.buffer = this.noiseBuf(); n.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = .9;
+    f.frequency.setValueAtTime(fa, t); f.frequency.exponentialRampToValueAtTime(fb, t + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + dur * .35); g.gain.linearRampToValueAtTime(vol * .8, t + dur * .8); g.gain.linearRampToValueAtTime(0, t + dur);
+    n.connect(f); f.connect(g); g.connect(this.cine); g.connect(this.bigVerb); n.start(t); n.stop(t + dur + .05);
   }
 
   /** Intro skipped: silence the swell and start the ambient score right away */

@@ -108,8 +108,9 @@ export function createRenderer(canvas, quality) {
   resize();
 
   const tmp = new THREE.Vector3(), right = new THREE.Vector3();
-  /** Projects the black hole into screen space for the lensing pass */
+  /** Projects the wormhole into screen space for the lensing pass */
   function updateLens(worldPos, worldRadius, strength) {
+    lens.enabled = strength > 0;
     tmp.copy(worldPos).project(camera);
     const behind = tmp.z > 1;
     lens.uniforms.uCenter.value.set(tmp.x * .5 + .5, tmp.y * .5 + .5);

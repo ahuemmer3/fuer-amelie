@@ -234,14 +234,14 @@ export class Journey {
     const times = [.6, 2.6, 4.7, 6.4, 8.0];
     for (let i = 0; i < times.length; i++) if (t >= times[i] && this.captionAt < i) { this.captionAt = i; this.caption(i); }
 
-    // camera on its path, looking at the beam
-    cam.position.copy(this.camCurve.getPointAt(u));
+    // camera on its path, looking at the beam (until the dive to the Earth takes over)
+    if (!this.camFree) cam.position.copy(this.camCurve.getPointAt(u));
     const bu = clamp(u + .05 + (u > .7 ? (u - .7) * .35 : 0), 0, 1);
     const headIdx = Math.round(bu * (this.beamSamples.length - 1));
     const head = this.beamSamples[headIdx];
     const k = ease.inOutCubic(clamp((u - .78) / .22, 0, 1));
     this.look.copy(head).lerp(this.home.target, k);
-    cam.lookAt(this.look);
+    if (!this.camFree) cam.lookAt(this.look);
 
     // fade in, then out once the heart is reached
     const fadeIn = clamp(t / .8, 0, 1);

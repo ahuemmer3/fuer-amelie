@@ -35,9 +35,11 @@ export const CONFIG = {
   /* ---------- Großer Schriftzug in der Galaxie (wechselt alle paar Sekunden) ---------- */
   titel: ['Happy Birthday, Amelie', 'Ich liebe dich', 'Meine Lieblings-Nervensäge'],
 
-  /* ---------- Intro-Film: Texte beim Flug durchs Sonnensystem ----------
-     reise   = 6 Zeilen: Erde, Mond, Mars, Jupiter, Saturn, Wurmloch (eine Zeile mit „&“ wird groß angezeigt)
-     ankunft = Zeile beim Anflug auf eure Galaxie
+  /* ---------- Intro-Film: Texte ----------
+     reise   = 6 Zeilen beim Flug durchs Sonnensystem: Erde, Mond, Mars, Jupiter, Saturn, Wurmloch
+               (eine Zeile mit „&“ wird groß angezeigt)
+     heimweg = 2 Zeilen: beim Flug durch eure Galaxie, dann beim Sturzflug auf die Erde zu eurem Haus
+     ankunft = Zeile beim Rückflug in die Galaxie, kurz vor der Party
      Die zwei Porträts liegen in assets/photos/thumbs/ (portrait-aaron.webp, portrait-amelie.webp) */
   intro: {
     reise: [
@@ -48,8 +50,23 @@ export const CONFIG = {
       'Am 24. Dezember 2025 hat es endlich Klick gemacht.',
       'Amelie & Aaron'
     ],
+    heimweg: ['Egal, wie weit ich fliege …', '… am Ende lande ich immer wieder bei dir.'],
     ankunft: ['Und heute ist dein Tag.'],
     portraits: ['portrait-aaron.webp', 'portrait-amelie.webp']
+  },
+
+  /* ---------- Euer Zuhause: der Zoom von der Erde bis auf euer Dach ----------
+     Die Luftbilder in assets/zoom/ sind genau für diesen Punkt gemacht.
+     Anderer Ort? Koordinaten ändern und  python tools/zoom-bilder.py  ausführen (siehe README). */
+  zuhause: {
+    titel: 'Unser Zuhause',
+    adresse: 'Püttlach 8 · Pottenstein',
+    breite: 49.8038829,              // Koordinaten des Hauses (OpenStreetMap)
+    laenge: 11.4718935,
+    // Umriss des Hauses in Metern (Ost, Nord) um diesen Punkt, aus OpenStreetMap: leuchtet beim Zoom
+    umriss: [[2.0, 8.79], [-8.14, -1.42], [1.47, -10.96], [9.56, -2.82], [5.29, 1.42], [7.34, 3.5], [4.32, 6.49]],
+    // Ortsnamen beim Runterzoomen: [unter dieser Höhe in km, Name]
+    orte: [[4000, 'Europa'], [500, 'Deutschland'], [40, 'Fränkische Schweiz'], [3, 'Püttlach']]
   },
 
   /* ---------- Geburtstagstorte (Planet „Torte“) ---------- */
@@ -220,7 +237,7 @@ export const CONFIG = {
     codewort: 'hunger',              // dieses Wort auf der Tastatur tippen (ihr Name funktioniert auch)
     herz: 'Goldenes Herz entdeckt! Du hast mein Herz fünfmal angetippt. Es gehört eh schon dir.',
     sternschnuppe: 'Sternschnuppe gefangen! Du darfst dir etwas wünschen. Sag es mir einfach. (Nein, nicht schon wieder Pizza. Okay, doch.)',
-    schwarzesLoch: 'Vorsicht, Spaghettifizierung! Mmh, Spaghetti … Zum Glück zieht mich nur eine Sache so stark an: du.',
+    zuhause: 'Ab nach Hause! Egal, wo im Universum wir gerade sind: Zuhause ist da, wo du bist. (Und wo der Kühlschrank steht.)',
     konami: 'Cheat-Code aktiviert: unendlich viele Küsse freigeschaltet.',
     wort: 'Hunger? Natürlich. Das Essen ist schon unterwegs. Und ich liebe dich.'
   }

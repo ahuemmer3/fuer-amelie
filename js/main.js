@@ -5,10 +5,10 @@ import { detectQuality, FpsGuard } from './core/quality.js';
 import { createRenderer } from './core/renderer.js';
 import { Sound } from './core/audio.js';
 import { Progress } from './core/progress.js';
-import { clamp, lerp, ease, tween, heartBeat, thumbUrl, loadImage, rand } from './core/utils.js';
+import { clamp, lerp, ease, tween, thumbUrl, loadImage, rand } from './core/utils.js';
 import { Galaxy, omegaAt } from './scene/galaxy.js';
 import { Starfield } from './scene/starfield.js';
-import { BlackHole } from './scene/blackhole.js';
+import { Earth, ZOOM_LEVELS, RM } from './scene/earth.js';
 import { Heart } from './scene/heart.js';
 import { TextRings } from './scene/textrings.js';
 import { PhotoOrbs } from './scene/photos.js';
@@ -21,6 +21,7 @@ import { CardDissolve } from './intro/card.js';
 import { Warp } from './intro/warp.js';
 import { Journey } from './intro/journey.js';
 import { Odyssey } from './intro/odyssey.js';
+import { HomeZoom } from './intro/homezoom.js';
 import { Karaoke } from './ui/karaoke.js';
 import { buildSong, buildHappyBirthday, buildOdysseyTheme } from './core/songs.js';
 import { Overlay } from './ui/overlay.js';
@@ -31,7 +32,7 @@ import { toast, confetti } from './ui/feedback.js';
 const PLANETS = [
   { id: 'fangen', title: 'Herzen fangen', icon: '💗', color: '#ff8a5c', tex: 'mars.webp', kind: 'spiel', module: './games/catch.js' },
   { id: 'torte', title: 'Geburtstagstorte', icon: '🎂', color: '#ffc58f', tex: 'jupiter.webp', kind: 'ueberraschung', module: './pages/cake.js' },
-  { id: 'memory', title: 'Foto-Memory', icon: '🃏', color: '#7fc4ff', tex: 'earth.webp', kind: 'spiel', module: './games/memory.js' },
+  { id: 'memory', title: 'Foto-Memory', icon: '🃏', color: '#7fc4ff', tex: 'eris.webp', kind: 'spiel', module: './games/memory.js' },
   { id: 'zeit', title: 'Unsere Zeit', icon: '⏳', color: '#d9d4e8', tex: 'moon.webp', kind: 'ueberraschung', module: './pages/counter.js' },
   { id: 'quiz', title: 'Unser Quiz', icon: '💭', color: '#6f8bff', tex: 'neptune.webp', kind: 'spiel', module: './games/quiz.js' },
   { id: 'song', title: 'Dein Song', icon: '🎤', color: '#ffd9a0', tex: 'saturn.webp', ring: true, kind: 'ueberraschung', module: './pages/song.js' },
@@ -45,8 +46,12 @@ const PLANETS = [
 const REQUIRED = PLANETS.filter(p => p.kind === 'spiel').map(p => p.id);
 const KICKER = { spiel: 'Spiel', ueberraschung: 'Überraschung', finale: 'Finale' };
 const EGGS_TOTAL = 5;
-const PLANET_TEXTURES = ['earth.webp', 'earth-night.webp', 'earth-clouds.webp', 'moon.webp', 'mars.webp', 'jupiter.webp', 'saturn.webp', 'saturn-ring.webp', 'milkyway.webp', 'neptune.webp', 'venus.webp', 'uranus.webp', 'mercury.webp'];
+const PLANET_TEXTURES = ['earth.webp', 'earth-night.webp', 'earth-clouds.webp', 'moon.webp', 'mars.webp', 'jupiter.webp', 'saturn.webp', 'saturn-ring.webp', 'milkyway.webp', 'neptune.webp', 'venus.webp', 'uranus.webp', 'mercury.webp', 'eris.webp'];
 const planetTextures = {};
+const HOME = CONFIG.zuhause || {};
+// aerial images for the zoom down to your house (loaded in the background, needed ~30 s into the intro)
+const zoomLevels = ZOOM_LEVELS.map(([file, half]) => ({ file, half, tex: null, ready: false }));
+const EARTH_R = 2.4, EARTH_Y = -.5;   // the Earth sits in the centre, its top just under the heart
 const SONG = CONFIG.geburtstagsSong || {};
 const SONG_FILE = SONG.datei || '';
 
@@ -99,6 +104,8 @@ $('cardTitle').textContent = CONFIG.karte.titel;
 $('cardSub').textContent = CONFIG.karte.untertitel;
 $('openBtn').querySelector('span').textContent = CONFIG.karte.button;
 $('cardDate').textContent = CONFIG.karte.datum || new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' });
+$('homePin').querySelector('.hp-title').textContent = HOME.titel || 'Unser Zuhause';
+$('homePin').querySelector('.hp-sub').textContent = HOME.adresse || '';
 const TITLES = [].concat(CONFIG.titel);
 $('titleText').textContent = TITLES[0];
 if (TITLES.length > 1) {
@@ -150,10 +157,15 @@ function build({ photoItems, textures }) {
   const galaxy = new Galaxy({ count: Q.galaxy, radius: 15, arms: 4, colors: CONFIG.farben, pixelRatio: R.pixelRatio });
   world.add(galaxy.points);
 
-  const blackHole = new BlackHole({ radius: 1.25, colors: CONFIG.farben, steps: Q.tier === 'high' ? 110 : Q.tier === 'medium' ? 70 : 0 });
-  world.add(blackHole.group);
+  const earth = new Earth({
+    textures: { day: planetTextures['earth.webp'], night: planetTextures['earth-night.webp'], clouds: planetTextures['earth-clouds.webp'] },
+    zoom: zoomLevels, home: { lat: HOME.breite, lon: HOME.laenge, outline: HOME.umriss || [] }, radius: EARTH_R
+  });
+  earth.group.position.y = EARTH_Y;
+  world.add(earth.group);
+  scene.add(earth.screenQuad);
 
-  const heart = new Heart({ count: Q.heart, streamCount: Q.stream, colors: CONFIG.farben, pixelRatio: R.pixelRatio });
+  const heart = new Heart({ count: Q.heart, streamCount: Q.stream, colors: CONFIG.farben, pixelRatio: R.pixelRatio, earthR: EARTH_R, earthY: EARTH_Y });
   world.add(heart.group);
   world.add(heart.stream);
 
@@ -180,7 +192,22 @@ function build({ photoItems, textures }) {
   world.add(wishes.group);
   Progress.wishes().forEach((w, i) => wishes.add(seedFrom(w.text + i), 0));
 
-  return { starfield, galaxy, blackHole, heart, rings, photos, floaters, shooting, planets, fireworks, wishes };
+  return { starfield, galaxy, earth, heart, rings, photos, floaters, shooting, planets, fireworks, wishes };
+}
+
+/** the aerial images load quietly after the loading screen and are uploaded to the GPU right away */
+function loadZoomImages() {
+  const loader = new THREE.TextureLoader();
+  zoomLevels.forEach((z, i) => setTimeout(() => {
+    loader.loadAsync('./assets/zoom/' + z.file).then(tx => {
+      tx.colorSpace = THREE.SRGBColorSpace;
+      tx.anisotropy = Math.min(8, R.renderer.capabilities.getMaxAnisotropy());
+      R.renderer.initTexture(tx);
+      guard.pause(2);   // one-off upload hitch, not a slow device
+      z.tex = tx; z.ready = true;
+      objects.earth.setZoomTexture(i, tx);
+    }).catch(() => console.warn('Luftbild fehlt: ' + z.file));
+  }, i * 120));
 }
 
 const seedFrom = s => { let x = 0; for (const ch of s) x = (x * 31 + ch.charCodeAt(0)) % 100003; return (x % 1000) / 1000; };
@@ -398,7 +425,7 @@ window.addEventListener('keydown', e => {
 const ray = new THREE.Raycaster();
 const ndc = new THREE.Vector2();
 const pointers = new Map();
-let down = null, longTimer = 0, hoverDirty = false, lastMove = { x: 0, y: 0 };
+let down = null, hoverDirty = false, lastMove = { x: 0, y: 0 };
 
 function pick(x, y) {
   ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1);
@@ -409,36 +436,29 @@ function pick(x, y) {
   ray.intersectObject(o.heart.hit, false).forEach(hh => hits.push({ type: 'heart', d: hh.distance + 1.5 }));
   hits.sort((a, b) => a.d - b.d);
   if (hits.length) return hits[0];
-  if (ray.intersectObject(o.blackHole.hit, false).length) return { type: 'blackhole' };
+  if (o.earth.shell.visible && ray.intersectObject(o.earth.hit, false).length) return { type: 'earth' };
   return null;
 }
 
 canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, e);
   if (phase !== 'main' || overlay.isOpen || photoCard.isOpen) return;
-  if (pointers.size > 1) { down = null; clearTimeout(longTimer); return; }
+  if (pointers.size > 1) { down = null; return; }
   down = { x: e.clientX, y: e.clientY, t: performance.now() };
-  clearTimeout(longTimer);
-  longTimer = setTimeout(() => {
-    if (!down) return;
-    const hit = pick(down.x, down.y);
-    if (hit && hit.type === 'blackhole') { down = null; objects.heart.pull(); Sound.play('swallow'); egg('schwarzesloch', CONFIG.easterEggs.schwarzesLoch); }
-  }, 700);
 });
 canvas.addEventListener('pointermove', e => {
-  if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) { down = null; clearTimeout(longTimer); }
+  if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) down = null;
   if (e.pointerType === 'mouse') { lastMove = { x: e.clientX, y: e.clientY }; hoverDirty = true; parallax.tx = (e.clientX / innerWidth - .5) * 2; parallax.ty = (e.clientY / innerHeight - .5) * 2; }
 });
 const endPointer = e => {
   pointers.delete(e.pointerId);
-  clearTimeout(longTimer);
   if (!down || phase !== 'main') { down = null; return; }
   const d = down; down = null;
   if (performance.now() - d.t > 550) return;
   onTap(e.clientX, e.clientY);
 };
 canvas.addEventListener('pointerup', endPointer);
-canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); down = null; clearTimeout(longTimer); });
+canvas.addEventListener('pointercancel', e => { pointers.delete(e.pointerId); down = null; });
 
 function onTap(x, y) {
   if (overlay.isOpen || photoCard.isOpen || flying) return;
@@ -448,6 +468,7 @@ function onTap(x, y) {
   if (hit.type === 'planet') openPlanet(PLANETS.find(p => p.id === hit.id));
   else if (hit.type === 'photo') { Sound.play('tap'); photoCard.open(CONFIG.fotos.indexOf(hit.mesh.userData.item)); }
   else if (hit.type === 'heart') onHeartTap();
+  else if (hit.type === 'earth') zoomHome();
 }
 
 function updateHover() {
@@ -456,7 +477,7 @@ function updateHover() {
   const hit = pick(lastMove.x, lastMove.y);
   objects.planets.setHover(hit && hit.type === 'planet' ? hit.id : null);
   objects.photos.setHover(hit && hit.type === 'photo' ? hit.mesh : null);
-  canvas.style.cursor = hit && hit.type !== 'blackhole' ? 'pointer' : 'grab';
+  canvas.style.cursor = hit ? 'pointer' : 'grab';
 }
 
 /* parallax from mouse or device tilt */
@@ -535,8 +556,12 @@ function renderMap(body) {
   sec('Spiele', PLANETS.filter(p => p.kind === 'spiel'));
   sec('Überraschungen', PLANETS.filter(p => p.kind === 'ueberraschung'));
   sec('Finale', PLANETS.filter(p => p.kind === 'finale'));
-  const credit = document.createElement('p'); credit.className = 'map-sec'; credit.style.marginTop = '14px';
-  credit.innerHTML = 'Planetentexturen: <a href="https://www.solarsystemscope.com/textures/" target="_blank" rel="noopener" style="color:inherit">Solar System Scope</a> (CC BY 4.0)';
+  const credit = document.createElement('p'); credit.className = 'map-sec map-credit'; credit.style.marginTop = '14px';
+  const a = (href, text) => `<a href="${href}" target="_blank" rel="noopener">${text}</a>`;
+  credit.innerHTML = `Planetentexturen: ${a('https://www.solarsystemscope.com/textures/', 'Solar System Scope')} (CC BY 4.0) · `
+    + `Luftbilder: ${a('https://geodaten.bayern.de', 'Bayerische Vermessungsverwaltung')} (CC BY 4.0) und `
+    + `${a('https://cloudless.eox.at', 'EOxCloudless 2024')} von EOX, enthält modifizierte Copernicus-Sentinel-Daten (CC BY-NC-SA 4.0) · `
+    + `Hausumriss © ${a('https://www.openstreetmap.org/copyright', 'OpenStreetMap')}-Mitwirkende`;
   body.appendChild(credit);
 }
 let hintShown = false;
@@ -545,13 +570,13 @@ function hideHint() { if (!hintShown) return; hintShown = false; $('hint').class
 /* ------------------------------------------------------------------ intro */
 // timeline in seconds after tapping "Öffnen":
 // card → particles (0–1.25) · odyssey past Earth, Moon, Mars, Jupiter, Saturn into a wormhole (1.25–20.85)
-// · out of the wormhole into the galaxy, the two portraits fly into the heart · surprise party → Happy Birthday → song
-let dissolve, warp, journey, odyssey, portraitTextures = [];
-let odStarted = false, odEnded = false, arrived = false, flashed = {};
-const tmpV = new THREE.Vector3();
+// · out of the wormhole into the galaxy, the two portraits fly into the heart (–27.6)
+// · dive into the Earth, down to your house and back out (–43.7) · surprise party → song
+let dissolve, warp, journey, odyssey, homeZoom = null, portraitTextures = [];
+let odStarted = false, odEnded = false, arrived = false, flashed = {}, fgFade = 1;
 const OD_START = 1.25, OD_DUR = 19.6, SPACE_START = OD_START + OD_DUR;
 const J_START = SPACE_START + .25, J_DUR = 6.5, J_ARRIVE = .779 * J_DUR + .9;
-const ARRIVE_AT = J_START + J_ARRIVE;
+const DIVE_AT = J_START + J_DUR;
 const HEART_POS = new THREE.Vector3(0, 5.1, 0);
 const BLOOM = { strength: R.bloom.strength, threshold: R.bloom.threshold, exposure: R.renderer.toneMappingExposure };
 
@@ -569,9 +594,60 @@ function startIntro() {
   const intro = CONFIG.intro || {};
   warp = new Warp({ camera, count: Q.warp });
   odyssey = new Odyssey({ camera, quality: Q, captionsEl: $('cine'), lines: intro.reise || [], textures: planetTextures });
-  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: intro.ankunft || [] });
+  journey = new Journey({ parent: world, camera, portraits: portraitTextures, home: homeView(), heartPos: HEART_POS, quality: Q, captionsEl: $('cine'), lines: (intro.heimweg || []).slice(0, 1) });
+  homeZoom = makeZoom(true);
   setTimeout(() => { if (phase === 'intro') $('skipBtn').hidden = false; }, 1500);
 }
+
+/* ------------------------------------------------------------------ zoom to your house */
+function makeZoom(intro) {
+  const z = CONFIG.intro || {};
+  return new HomeZoom({
+    earth: objects.earth, camera, captionsEl: $('cine'), geoEl: $('geo'), pinEl: $('homePin'), places: HOME.orte || [], intro,
+    lines: ['', (z.heimweg || [])[1] || '', (z.ankunft || [])[0] || ''],
+    onFade: f => { fgFade = f; }
+  });
+}
+
+/** tap on the Earth: fly down to your house again */
+function zoomHome() {
+  if (homeZoom || flying || overlay.isOpen || photoCard.isOpen || phase !== 'main') return;
+  hideHint();
+  phase = 'zoom';
+  controls.enabled = false;
+  objects.planets.labelsOn = false;
+  $('title').classList.remove('show');
+  homeZoom = makeZoom(false);
+  homeZoom.start({ look: controls.target.clone(), back: { pos: camera.position.clone(), target: controls.target.clone() } });
+  Sound.play('whoosh');
+}
+
+function onZoomEvent(ev) {
+  if (!ev) return;
+  const intro = homeZoom.intro;
+  if (ev === 'touch' && !intro) Sound.play('magic');
+  if (ev === 'up' && !intro) Sound.play('whoosh');
+  if (ev === 'arrive') {
+    homeZoom = null;
+    if (intro) { onArrive(); enterMain(); return; }
+    phase = 'main';
+    controls.enabled = true;
+    controls.update();
+    objects.planets.labelsOn = true;
+    $('title').classList.add('show');
+    if (!Progress.eggs().includes('zuhause')) setTimeout(() => egg('zuhause', CONFIG.easterEggs.zuhause), 500);
+  }
+}
+
+/** close to the Earth the galaxy's glow would wash it out: turn the bloom down with the distance */
+function zoomBloom() {
+  if (!homeZoom || homeZoom.t < 0) return;
+  const d = camera.position.distanceTo(objects.earth.center(tmpC)) / EARTH_R;
+  const k = homeZoom.screen ? 1 : clamp((7 - d) / 4, 0, 1);
+  R.bloom.strength = lerp(BLOOM.strength, .3, k);
+  R.bloom.threshold = lerp(BLOOM.threshold, .92, k);
+}
+const tmpC = new THREE.Vector3();
 
 function flash(kind = 'go') {
   const f = $('flash');
@@ -598,7 +674,16 @@ function leaveOdyssey() {
   camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
   warp.start();
   Sound.play('whoosh');
-  Sound.cinematic(ARRIVE_AT - SPACE_START);
+  // music for the rest of the film, timed to the dive (all times from now)
+  const T = homeZoom.T, dive = DIVE_AT - SPACE_START, touch = dive + T.A + T.D, up = touch + T.H;
+  Sound.homecoming({ portraits: J_START - SPACE_START + J_ARRIVE, dive, touch, up, arrive: up + T.U + T.B });
+}
+
+/** the two portraits reach the heart: it glows golden, then we dive to the Earth */
+function onPortraits() {
+  objects.heart.gold(3.2);
+  const hp = objects.heart.group.getWorldPosition(new THREE.Vector3());
+  objects.fireworks.burst(hp, { count: Q.tier === 'low' ? 260 : 420, color: '#ffcf73', speed: 2.6, heart: true });
 }
 
 function updateIntro(dt) {
@@ -614,17 +699,21 @@ function updateIntro(dt) {
     if (warp.active) warp.update(dt);
     if (introT >= J_START) {
       if (journey.t < 0) journey.start(J_DUR);
-      if (journey.update(dt) === 'arrive') onArrive();
+      if (!journey.done && journey.update(dt) === 'arrive') onPortraits();
     } else {
       camera.position.copy(journey.startPos);
       camera.lookAt(journey.beamSamples[Math.round(.06 * (journey.beamSamples.length - 1))]);
     }
+    if (introT >= DIVE_AT && homeZoom && homeZoom.t < 0) {
+      journey.camFree = true;
+      const home = homeView();
+      homeZoom.start({ look: home.target, back: home });
+    }
   }
   fade = odEnded ? ease.inOutSine(clamp((introT - SPACE_START) / 3.5, 0, 1)) : 0;
-  if (introT > J_START + J_DUR + .4) enterMain();
 }
 
-/** the two portraits reach the heart: it bursts, then the surprise party starts */
+/** back from your house: the heart bursts, then the surprise party starts */
 function onArrive() {
   if (arrived) return;
   arrived = true;
@@ -685,6 +774,8 @@ function skipIntro() {
   Sound.stopSeq(false);
   if (warp && warp.active) warp.stop();
   journey && journey.finish();
+  if (homeZoom) { homeZoom.finish(); homeZoom = null; R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; }
+  fgFade = 1;
   Sound.skipCinematic();
   $('intro').hidden = true;
   $('cine').classList.remove('in', 'big');
@@ -713,15 +804,15 @@ function enterMain(home = homeView()) {
 
 /* ------------------------------------------------------------------ loop */
 function setFade(f) {
-  const o = objects;
+  const o = objects, g = f * fgFade;   // fgFade: rings, photos & planets step aside while we dive to the Earth
   o.galaxy.material.uniforms.uOpacity.value = f;
-  o.blackHole.setOpacity(f);
-  o.heart.setOpacity(f);
-  o.rings.setOpacity(ease.inCubic(f));
-  o.photos.setOpacity(ease.inCubic(f));
-  o.floaters.setOpacity(f);
-  o.wishes.setOpacity(f);
-  o.planets.setVisible(ease.inCubic(f));
+  o.earth.setOpacity(f);
+  o.heart.setOpacity(f, g);
+  o.rings.setOpacity(ease.inCubic(g));
+  o.photos.setOpacity(ease.inCubic(g));
+  o.floaters.setOpacity(g);
+  o.wishes.setOpacity(g);
+  o.planets.setVisible(ease.inCubic(g));
 }
 
 function frame() {
@@ -732,14 +823,21 @@ function frame() {
   t += dt;
   const o = objects;
   const audio = Sound.level();
-  const beat = heartBeat(t);
 
   if (phase === 'intro') updateIntro(dt);
+  if (homeZoom && homeZoom.t >= 0 && !homeZoom.done) {
+    const z = homeZoom;
+    onZoomEvent(z.update(dt));
+    if (z.done) { R.bloom.strength = BLOOM.strength; R.bloom.threshold = BLOOM.threshold; } else zoomBloom();
+  }
+  // deep down the planet covers the whole screen: skip drawing the galaxy behind it
+  const deep = !!(homeZoom && homeZoom.screen && o.earth.uniforms.uCamAlt.value < .12 * RM);
+  world.visible = o.starfield.group.visible = o.shooting.group.visible = !deep;
   setFade(fade);
 
   o.starfield.update(t);
   o.galaxy.update(t, audio);
-  o.blackHole.update(t, beat * .45 + audio * .5);
+  o.earth.update(t, dt, camera, innerHeight * R.pixelRatio);
   o.heart.update(t, dt, audio);
   o.rings.update(t);
   o.photos.update(t, dt, camera);
@@ -749,15 +847,18 @@ function frame() {
   o.wishes.update(t);
   o.planets.update(t, dt, camera, innerWidth, innerHeight);
 
-  parallax.x += (parallax.tx - parallax.x) * Math.min(1, dt * 2.5);
-  parallax.y += (parallax.ty - parallax.y) * Math.min(1, dt * 2.5);
-  world.rotation.x = parallax.y * .045;
-  world.rotation.z = -parallax.x * .035;
+  // parallax (held still while diving: the Earth's local frame must not move under the camera)
+  if (!homeZoom || homeZoom.t < 0) {
+    parallax.x += (parallax.tx - parallax.x) * Math.min(1, dt * 2.5);
+    parallax.y += (parallax.ty - parallax.y) * Math.min(1, dt * 2.5);
+    world.rotation.x = parallax.y * .045;
+    world.rotation.z = -parallax.x * .035;
+  }
 
   if (phase === 'main' && controls.enabled && !flying) controls.update(dt);
   updateHover();
   if (odStarted && !odEnded) R.updateLens(odyssey.wormPos, odyssey.wormR, 1.1);
-  else R.updateLens(o.blackHole.group.getWorldPosition(tmpV), 1.25, .3 * fade);
+  else R.lens.enabled = false;
   R.render(t);
   if (phase === 'main' && !flying) guard.update(dt);
 }
@@ -784,7 +885,11 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) { cl
     portraitTextures = assets.portraits;
     refreshPlanetStates();
     Progress.onChange(refreshPlanetStates);
-    window.__galaxy = { quality: Q, fps: () => guard.fps, phase: () => phase, introT: () => introT, open: id => openPlanet(PLANETS.find(p => p.id === id), { fly: false }), party: () => onArrive() };
+    window.__galaxy = {
+      quality: Q, fps: () => guard.fps, phase: () => phase, introT: () => introT, open: id => openPlanet(PLANETS.find(p => p.id === id), { fly: false }), party: () => onArrive(),
+      zoom: () => zoomHome(), zoomT: () => (homeZoom ? homeZoom.t : -1), zoomReady: () => zoomLevels.filter(z => z.ready).length
+    };
+    loadZoomImages();
     clock.getDelta();
     requestAnimationFrame(frame);
     setProgress(1);

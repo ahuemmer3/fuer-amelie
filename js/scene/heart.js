@@ -18,7 +18,7 @@ function surfacePoint(dx, dz, dd, cz) {
 }
 
 export class Heart {
-  constructor({ count, streamCount, colors, pixelRatio, y = 5.1, scale = 2.5 }) {
+  constructor({ count, streamCount, colors, pixelRatio, y = 5.1, scale = 2.5, earthR = 2.4, earthY = -.5 }) {
     this.y = y; this.scale = scale;
     this.group = new THREE.Group();
     this.group.position.set(0, y, 0);
@@ -102,7 +102,7 @@ export class Heart {
     this.hit.position.y = .1;
     this.group.add(this.hit);
 
-    // vortex stream from the heart's tip into the black hole (fully animated on the GPU)
+    // vortex stream from the heart's tip down onto the Earth, where it spreads out (fully animated on the GPU)
     const sSeed = new Float32Array(streamCount * 3), sCol = new Float32Array(streamCount * 3);
     for (let i = 0; i < streamCount; i++) {
       sSeed[i * 3] = Math.random(); sSeed[i * 3 + 1] = Math.random(); sSeed[i * 3 + 2] = Math.random();
@@ -114,23 +114,28 @@ export class Heart {
     sGeo.setAttribute('aSeed', new THREE.BufferAttribute(sSeed, 3));
     sGeo.setAttribute('aColor', new THREE.BufferAttribute(sCol, 3));
     this.streamMat = new THREE.ShaderMaterial({
-      uniforms: { uTime: { value: 0 }, uTipY: { value: y - scale * .98 }, uHoleR: { value: 1.25 }, uSize: { value: 13 }, uPixelRatio: { value: pixelRatio }, uOpacity: { value: 0 } },
+      uniforms: { uTime: { value: 0 }, uTipY: { value: y - scale * .98 }, uEarthR: { value: earthR }, uEarthY: { value: earthY }, uSize: { value: 13 }, uPixelRatio: { value: pixelRatio }, uOpacity: { value: 0 } },
       vertexShader: /* glsl */`
-        uniform float uTime, uTipY, uHoleR, uSize, uPixelRatio, uOpacity;
+        uniform float uTime, uTipY, uEarthR, uEarthY, uSize, uPixelRatio, uOpacity;
         attribute vec3 aSeed; attribute vec3 aColor;
         varying vec3 vColor; varying float vAlpha;
         void main() {
           float s = fract(aSeed.x + uTime * 0.07);
-          float y = mix(uTipY, 0.05, pow(s, 0.85));
-          float rad = 0.04 + sin(s * 3.14159) * (0.9 + 1.1 * aSeed.z) * (1.0 - s * 0.3);
-          rad = mix(rad, uHoleR * (1.0 + aSeed.z * 0.6), smoothstep(0.78, 1.0, s));
           float ang = aSeed.y * 6.28318 + s * 13.0 + uTime * 0.5;
+          // a narrow vortex down to the top of the globe …
+          float k = smoothstep(0.0, 0.7, s);
+          float y = mix(uTipY, uEarthY + uEarthR * 1.03, pow(k, 0.9));
+          float rad = 0.03 + sin(k * 3.14159) * (0.45 + 0.6 * aSeed.z) * (1.0 - k * 0.6);
           vec3 p = vec3(cos(ang) * rad, y, sin(ang) * rad);
+          // … where it lands and flows out over the surface
+          float th = smoothstep(0.62, 1.0, s) * (0.55 + 0.75 * aSeed.z);
+          vec3 onEarth = vec3(0.0, uEarthY, 0.0) + uEarthR * 1.018 * vec3(sin(th) * cos(ang), cos(th), sin(th) * sin(ang));
+          p = mix(p, onEarth, smoothstep(0.58, 0.72, s));
           vec4 mv = modelViewMatrix * vec4(p, 1.0);
           gl_Position = projectionMatrix * mv;
           gl_PointSize = clamp((0.6 + aSeed.z) * uSize * uPixelRatio / -mv.z, 1.0, 24.0);
           vColor = aColor;
-          vAlpha = uOpacity * smoothstep(0.0, 0.08, s) * (1.0 - smoothstep(0.9, 1.0, s)) * 0.9;
+          vAlpha = uOpacity * smoothstep(0.0, 0.08, s) * (1.0 - smoothstep(0.86, 1.0, s)) * 0.9;
         }`,
       fragmentShader: /* glsl */`
         varying vec3 vColor; varying float vAlpha;
@@ -152,7 +157,7 @@ export class Heart {
   explode() { if (this.explodeT < 0) this.explodeT = 0; }
   gold(seconds = 8) { this.goldT = seconds; }
   pull() { this.pullT = 0; }
-  setOpacity(o) { this.material.uniforms.uOpacity.value = o; this.streamMat.uniforms.uOpacity.value = o; }
+  setOpacity(o, stream = o) { this.material.uniforms.uOpacity.value = o; this.streamMat.uniforms.uOpacity.value = stream; }
   setPixelRatio(v) { this.material.uniforms.uPixelRatio.value = v; this.streamMat.uniforms.uPixelRatio.value = v; }
   setDensity(f) { this.points.geometry.setDrawRange(0, Math.floor(this.count * f)); }
 

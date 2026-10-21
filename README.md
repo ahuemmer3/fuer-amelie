@@ -2,9 +2,10 @@
 
 **Live:** <https://ahuemmer3.github.io/fuer-amelie/>
 
-Eine interaktive 3D-Webseite als Geschenk: Startkarte, Warp-Flug, eine Galaxie mit
-schwarzem Loch im Interstellar-Stil und Partikelherz, kreisende Fotos, 5 aufwendige Spiele, Überraschungen und ein
-finaler Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
+Eine interaktive 3D-Webseite als Geschenk: Startkarte, ein Intro-Film durchs Sonnensystem,
+eine Galaxie mit der Erde in der Mitte und einem Partikelherz darüber, ein Zoom aus dem All bis
+auf euer Hausdach, kreisende Fotos, 5 aufwendige Spiele, Überraschungen und ein finaler
+Liebesbrief mit Feuerwerk. Läuft am iPhone und am Laptop, ganz ohne Build-Tool.
 
 ---
 
@@ -22,11 +23,12 @@ Anführungszeichen `'...'`. Kommas und Klammern bitte stehen lassen.
 |---|---|
 | Ihr Name (taucht in Texten auf, ist auch ein Easter-Egg-Codewort) | `ihrName` |
 | Deine Unterschrift | `deinName` |
-| **Euer Startdatum für den Zähler** | `zusammenSeit: '2025-06-14'` |
-| Initialen fürs Sternbild-Spiel | `initialen: ['A', 'L']` |
+| **Euer Startdatum für den Zähler** | `zusammenSeit: '2025-12-24'` |
+| Initialen fürs Sternbild-Spiel | `initialen: ['A', 'A']` |
 | Startkarte (Titel, Untertitel, Datum, Button) | `karte` |
 | Großer Schriftzug (wechselt) | `titel` |
-| Texte im Intro-Film (Flug durchs Sonnensystem), Porträts | `intro.reise`, `intro.ankunft` |
+| Texte im Intro-Film (Sonnensystem, Heimweg, Ankunft), Porträts | `intro.reise`, `intro.heimweg`, `intro.ankunft` |
+| Euer Zuhause: Koordinaten, Beschriftung, Ortsnamen beim Zoom | `zuhause` |
 | Geburtstagstorte (Kerzen, Wunsch) | `geburtstag` |
 | Farben | `farben` |
 | Musik | `musik.datei` |
@@ -67,6 +69,21 @@ Lege eine MP3 in `assets/music/` (Dateiname klein, ohne Leerzeichen, z. B. `unse
 und trage sie ein: `musik: { datei: './assets/music/unser-lied.mp3', lautstaerke: 0.7 }`.
 Ohne MP3 spielt automatisch eine sanfte, erzeugte Klangfläche. Die Musik startet mit
 dem Tippen auf „Öffnen“, denn Browser erlauben keinen automatischen Ton.
+
+### Euer Zuhause (Zoom von der Erde bis aufs Dach)
+
+Am Ende des Intro-Films taucht die Kamera in die Erde in der Mitte der Galaxie und zoomt
+über Europa, Deutschland und die Fränkische Schweiz bis auf euer Dach in Püttlach. Dort fällt
+ein Herz-Pin mit „Unser Zuhause“ auf das Haus, das leuchtend umrandet ist. Danach geht es
+zurück ins All und die Party beginnt. Später startet ein Tipp auf die Erde den Zoom noch einmal.
+
+- Koordinaten, Beschriftung, Hausumriss und Ortsnamen stehen in `config.js` bei `zuhause`.
+- Die Luftbilder liegen in `assets/zoom/` (9 Stufen, zusammen ca. 1,8 MB) und sind genau für
+  diesen Punkt erstellt. Für einen anderen Ort neu erzeugen (Hausdach-Bilder gibt es nur für Bayern):
+  ```bash
+  pip install pillow numpy
+  python tools/zoom-bilder.py 49.8038829 11.4718935
+  ```
 
 ---
 
@@ -148,9 +165,9 @@ Vorschau deshalb am besten erst, wenn alles fertig ist (z. B. indem du dir selbs
 
 - **Datenschutz:** GitHub Pages ist öffentlich. Jeder, der den Link kennt, kann die Seite und
   die Fotos sehen, und beim kostenlosen GitHub-Plan ist auch das Repository öffentlich. Die
-  Seite ist für Suchmaschinen auf `noindex` gestellt, aber das ist kein Passwortschutz. Das
-  Nimm also nur Fotos, mit denen ihr
-  beide einverstanden seid.
+  Seite ist für Suchmaschinen auf `noindex` gestellt, aber das ist kein Passwortschutz. Nimm
+  also nur Fotos, mit denen ihr beide einverstanden seid. Das gilt auch für euer Zuhause: Die
+  Adresse und die Luftbilder eures Hauses sind über den Link und im Repository sichtbar.
 - **Fortschritt** (erledigte Spiele, Wünsche, Easter Eggs) speichert ihr Browser lokal.
   Auf einem anderen Gerät beginnt sie von vorn.
 - **Leistung:** Die Seite erkennt das Gerät (Laptop: ca. 170.000 Galaxie-Partikel,
@@ -178,7 +195,7 @@ behält. Die Musik wird live im Browser erzeugt, es gibt keine Musikdatei.
 
 1. Fünfmal schnell auf das Herz tippen: Es wird golden und es regnet Herzen.
 2. Eine Sternschnuppe antippen.
-3. Lange auf das schwarze Loch drücken: Das Herz wird hineingezogen.
+3. Auf die Erde in der Mitte tippen: Zoom bis zu eurem Haus.
 4. Am Laptop das Codewort aus `config.js` oder ihren Namen tippen.
 5. Konami-Code: ↑ ↑ ↓ ↓ ← → ← → B A
 
@@ -192,13 +209,13 @@ config.js             ALLE Inhalte zum Anpassen
 css/style.css         Gestaltung (Glas, Glow, Spiele)
 js/main.js            Ablauf, Kamera, Eingaben, Planeten
 js/core/              Renderer + Post-Processing, Qualität, Audio, Fortschritt
-js/scene/             Galaxie, schwarzes Loch, Herz, Ringe, Fotos, Planeten, Feuerwerk …
-js/intro/             Karte → Partikel, Warp-Tunnel
+js/scene/             Galaxie, Erde (Shader mit Zoom bis aufs Dach), Herz, Ringe, Fotos, Planeten, Feuerwerk …
+js/intro/             Karte → Partikel, Flug durchs Sonnensystem, Warp, Galaxie-Anflug, Zoom zum Haus
 js/ui/                Overlay, Foto-Karte, Hinweise, Konfetti
 js/games/             ein Modul pro Spiel
 js/pages/             Zähler, Zeitstrahl, Gründe, Liebesbrief
-assets/               Fotos (WebP), Musik, Vorschaubild, Icons
-tools/                Foto-Optimierer und Playwright-Tests (für die Seite nicht nötig)
+assets/               Fotos (WebP), Planetentexturen, Luftbilder für den Zoom, Musik, Vorschaubild, Icons
+tools/                Foto-Optimierer, Luftbild-Werkzeug und Playwright-Tests (für die Seite nicht nötig)
 ```
 
 Technik: Three.js 0.186 über eine Importmap (jsDelivr), eigene GLSL-Shader für alle
@@ -209,5 +226,8 @@ Partikel, EffectComposer mit UnrealBloom, ACES-Tonemapping, Vignette und Filmkor
 ## Credits
 
 - Planetentexturen und Milchstraße: [Solar System Scope](https://www.solarsystemscope.com/textures/), Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Luftbilder Dorf bis Hausdach: [Bayerische Vermessungsverwaltung](https://geodaten.bayern.de), Digitale Orthophotos 20 cm, Lizenz [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+- Satellitenbilder Europa bis Ortsgegend: [EOxCloudless 2024](https://cloudless.eox.at) von EOX IT Services GmbH, enthält modifizierte Copernicus-Sentinel-Daten 2024, Lizenz [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) (die Ausschnitte in `assets/zoom/z1–z5` stehen unter derselben Lizenz)
+- Hausumriss: © [OpenStreetMap](https://www.openstreetmap.org/copyright)-Mitwirkende (ODbL)
 - 3D: [three.js](https://threejs.org) (MIT)
 - Alle Musikstücke (Intro, Spielmusik, der Song „Amelie“) sind eigene Kompositionen, die live im Browser erzeugt werden. „Happy Birthday to You“ ist gemeinfrei.

@@ -75,6 +75,20 @@
   <div id="flash" aria-hidden="true"></div>
   <div id="surprise" hidden><p class="sp-main">Überraschung!</p><p class="sp-sub">🎉 Happy Birthday 🎉</p></div>
 
+  <!-- Zoom zu eurem Haus: Ortsnamen, Koordinaten und der Herz-Pin auf dem Dach -->
+  <div id="geo" hidden aria-hidden="true"><p class="geo-place"></p><p class="geo-coords"></p></div>
+  <div id="homePin" hidden>
+    <div class="hp-drop">
+      <svg class="hp-pin" viewBox="0 0 64 84" aria-hidden="true">
+        <defs><linearGradient id="hpG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffa6d4"/><stop offset="1" stop-color="#ff2f8e"/></linearGradient></defs>
+        <path d="M32 81S5 50 5 30a27 27 0 0 1 54 0c0 20-27 51-27 51z" fill="url(#hpG)" stroke="#fff" stroke-width="3"/>
+        <path d="M32 43s-12-7.4-12-15a6.6 6.6 0 0 1 12-3.9A6.6 6.6 0 0 1 44 28c0 7.6-12 15-12 15z" fill="#fff"/>
+      </svg>
+    </div>
+    <i class="hp-shadow"></i>
+    <div class="hp-label"><p class="hp-title">Unser Zuhause</p><p class="hp-sub"></p></div>
+  </div>
+
   <!-- Karaoke für Happy Birthday und den Song -->
   <section id="karaoke" hidden aria-live="polite">
     <div class="kar-head">

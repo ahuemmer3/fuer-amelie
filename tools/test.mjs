@@ -64,6 +64,7 @@ const scenarios = {
     for (const device of ['desktop', 'iphone']) {
       await session('scene-' + device, { device, query: '?skip&q=' + (device === 'iphone' ? 'medium' : 'high') }, async (page, shot) => {
         await waitPhase(page, 'main');
+        await page.waitForFunction(() => window.__galaxy.zoomReady() === 9, null, { timeout: 60000 });
         await page.waitForTimeout(2500);
         console.log(`  ${device}: ${(await fps(page)).toFixed(1)} FPS, Qualität ${await page.evaluate(() => window.__galaxy.quality.tier)}, GPU ${await page.evaluate(() => window.__galaxy.quality.gpu)}`);
         await shot('main');
@@ -81,15 +82,33 @@ const scenarios = {
           await page.waitForFunction(x => window.__galaxy.introT() >= x || window.__galaxy.phase() === 'main', sec, { timeout: 60000 });
           await shot(label);
         };
-        await at(.6, '02-dissolve'); await at(2.6, '03-sky-a'); await at(5.6, '04-sky-b'); await at(8.6, '05-sky-c'); await at(11.9, '06-sky-space');
-        await at(14.6, '07-warp'); await at(17.6, '08-journey'); await at(20.9, '09-arrive');
-        await waitPhase(page, 'main'); await page.waitForTimeout(700); await shot('10-party');
-        await page.waitForTimeout(5000); await shot('11-happy-birthday');
+        await at(.6, '02-dissolve'); await at(3, '03-earth'); await at(12, '04-jupiter'); await at(19.4, '05-wormhole'); await at(22.5, '06-galaxy');
+        await at(27, '07-heart'); await at(30, '08-dive'); await at(32.2, '09-europe'); await at(35.8, '10-puettlach'); await at(38.6, '11-home');
+        await at(42.4, '12-back');
+        await waitPhase(page, 'main', 90000); await page.waitForTimeout(700); await shot('13-party');
+        await page.waitForTimeout(5000); await shot('14-happy-birthday');
         await page.waitForFunction(() => ['»Amelie«', 'Alles Gute, Amelie'].includes((document.querySelector('.kar-title') || {}).textContent), null, { timeout: 40000 });
-        await page.waitForTimeout(2500); await shot('12-song');
+        await page.waitForTimeout(2500); await shot('15-song');
         console.log('  Song-Titel: ' + await page.$eval('.kar-title', e => e.textContent));
         const playing = await page.evaluate(() => !document.getElementById('karaoke').hidden);
         console.log(`  Karaoke sichtbar: ${playing ? 'ja' : 'nein'}`);
+      });
+    }
+  },
+  /** tap on the Earth in the galaxy: the zoom down to the house and back (easter egg) */
+  async zoom() {
+    for (const device of ['desktop', 'iphone']) {
+      await session('zoom-' + device, { device, query: '?skip&reset&q=' + (device === 'iphone' ? 'medium' : 'high') }, async (page, shot) => {
+        await waitPhase(page, 'main');
+        await page.waitForFunction(() => window.__galaxy.zoomReady() === 9, null, { timeout: 60000 });
+        await page.waitForTimeout(1500);
+        await page.evaluate(() => window.__galaxy.zoom());
+        for (const [sec, label] of [[1.2, 'a-earth'], [3.4, 'b-europe'], [5.4, 'c-region'], [7.2, 'd-village'], [9.4, 'e-home'], [11.6, 'f-up']]) {
+          await page.waitForFunction(x => window.__galaxy.zoomT() >= x, sec, { timeout: 60000 }); await shot(label);
+        }
+        await waitPhase(page, 'main', 60000); await page.waitForTimeout(1200); await shot('g-back');
+        const eggs = await page.evaluate(() => JSON.parse(localStorage.getItem('gdl_progress') || '{}').eggs || []);
+        console.log(`  Zoom zum Haus → Easter Eggs: ${eggs.join(', ') || 'keins'}`);
       });
     }
   },
@@ -190,7 +209,7 @@ const scenarios = {
     const page = await (await browser.newContext({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 })).newPage();
     await page.goto(ORIGIN + '?skip&q=high');
     await waitPhase(page, 'main');
-    await page.addStyleTag({ content: '#labels,#hud,#mapBtn,#hint,#toasts{display:none!important}' });
+    await page.addStyleTag({ content: '#labels,#hud,#mapBtn,#hint,#toasts,#testBadge{display:none!important}' });
     await page.waitForTimeout(3500);
     await page.screenshot({ path: path.join(ROOT, 'assets', 'og-image.jpg'), type: 'jpeg', quality: 82 });
     await browser.close();
